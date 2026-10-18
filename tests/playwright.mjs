@@ -75,6 +75,19 @@ try{
   if(afterUndo!==savedCount+1)throw Error('Rapid undo history corrupted: '+afterUndo);
   await page.locator('#redo').click();
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount+2);
+  // Pixel budget prevents excessive full-size canvas allocations.
+  const budget=await page.evaluate(()=>{
+    const size=document.getElementById('resize'),oldPrompt=window.prompt;
+    window.prompt=m=>m.includes('width')?'6000':'2500';
+    size.click();window.prompt=oldPrompt;
+    const before=document.querySelectorAll('#layers li').length;
+    const oldAlert=window.alert;let message='';
+    window.alert=m=>{message=m};
+    for(let i=0;i<5;i++)document.getElementById('add').click();
+    window.alert=oldAlert;
+    return {before,after:document.querySelectorAll('#layers li').length,message};
+  });
+  if(budget.after>3)throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
