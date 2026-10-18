@@ -56,6 +56,22 @@ try{
   const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[400,280];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
+  // Recovery must preserve an existing session across reloads.
+  await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
+  await page.waitForTimeout(1600);
+  const saved=await page.evaluate(()=>localStorage.getItem('photosoap-autosave-v1'));
+  if(!saved)throw Error('Autosave was not written');
+  const savedCount=JSON.parse(saved).layers.length;
+  await page.reload();
+  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
+  const recovered=await page.locator('#layers li').count();
+  if(recovered!==savedCount)throw Error('Autosave recovery failed: '+recovered+' / '+savedCount);
+  // Large-file bounds: reject documents exceeding the 16MP canvas budget.
+  const bounds=await page.evaluate(()=>{
+    try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
+    catch{return true}
+  });
+  if(!bounds)throw Error('Large image pixel limit not enforced');
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
