@@ -34,7 +34,8 @@ try{
   await canvas.evaluate(()=>{window.confirm=()=>true;});
   // Invoke the crop button in the editor document: avoids Firefox's
   // unsupported mobile viewport scroll/click targeting in desktop emulation.
-  await canvas.evaluate(()=>document.getElementById('crop').click());
+  const cropDebug=await canvas.evaluate(()=>{const button=document.getElementById('crop');let confirmations=0,alerts=[];window.confirm=()=>{confirmations++;return true};window.alert=m=>alerts.push(m);const before=window.eval('selection');button.click();return {confirmations,alerts,disabled:button.disabled,selection:before,after:window.eval('selection'),dimensions:[document.getElementById('canvas').width,document.getElementById('canvas').height]}});
+  console.log(engine,mobile?'mobile':'desktop','crop diagnostics',JSON.stringify(cropDebug));
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
   if(Math.abs(cropped[0]-400)>4||Math.abs(cropped[1]-280)>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
