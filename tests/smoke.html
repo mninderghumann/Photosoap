@@ -18,7 +18,7 @@ document.getElementById('app').onload=()=>{
  try{
  check(d.querySelectorAll('#layers li').length===2,'undo');
  d.getElementById('redo').click();
- setTimeout(()=>{
+ setTimeout(async ()=>{
  try{
  check(d.querySelectorAll('#layers li').length===3,'redo');
  const png=d.getElementById('canvas').toDataURL('image/png');
@@ -27,6 +27,25 @@ document.getElementById('app').onload=()=>{
  let rejected=false;try{app.validateDocument({...snap,width:9000})}catch(e){rejected=true}check(rejected,'oversize rejected');
  rejected=false;try{app.validateDocument({...snap,layers:[{...snap.layers[0],x:Infinity}]})}catch(e){rejected=true}check(rejected,'invalid layer rejected');
  d.getElementById('selectall').click();check(app.eval('selection.w')===1000,'select all');d.getElementById('deselect').click();check(app.eval('selection')===null,'deselect');
+ 
+// Exercise canvas selection and crop with deterministic geometry.
+const c=d.getElementById('canvas'),rect=c.getBoundingClientRect();
+d.querySelector('[data-tool="select"]').click();
+const pointer=(type,x,y,id=9)=>c.dispatchEvent(new w.PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'mouse',clientX:rect.left+x*rect.width/1000,clientY:rect.top+y*rect.height/700}));
+pointer('pointerdown',100,120);pointer('pointermove',500,420);pointer('pointerup',500,420);
+check(Math.round(app.eval('selection.w'))===400,'pointer selection width');
+check(Math.round(app.eval('selection.h'))===300,'pointer selection height');
+const before=app.capture();
+w.confirm=()=>true;d.getElementById('crop').click();
+check(c.width===400&&c.height===300,'crop dimensions');
+check(app.capture().layers.every(l=>l.x===0&&l.y===0),'crop layer offsets');
+await app.restore(before);
+check(c.width===1000&&c.height===700,'restore dimensions');
+d.getElementById('zoom').value='150';d.getElementById('zoom').dispatchEvent(new w.Event('input'));
+check(Math.round(c.getBoundingClientRect().width)===1500,'zoom scaling');
+d.getElementById('fit').click();
+check(c.style.width==='','reset zoom');
+
  out.textContent='PASS: editor smoke tests';
  }catch(e){out.textContent='FAIL: '+e.message}
  },350);
