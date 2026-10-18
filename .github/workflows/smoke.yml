@@ -1,0 +1,17 @@
+name: Browser smoke tests
+on:
+  push:
+  pull_request:
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chromium
+        run: sudo apt-get update && sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+      - name: Run editor smoke tests
+        run: |
+          python3 -m http.server 8765 >/tmp/photosoap-http.log 2>&1 &
+          sleep 2
+          chromium --headless --no-sandbox --disable-dev-shm-usage --disable-gpu --virtual-time-budget=6000 --dump-dom http://127.0.0.1:8765/tests/smoke.html > /tmp/photosoap-smoke.html
+          cat /tmp/photosoap-smoke.html | grep 'PASS: editor smoke tests'
