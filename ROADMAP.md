@@ -10,9 +10,11 @@ PhotoSoap aims to combine an accessible design studio, advanced raster editor, q
 
 ## Phase 1: Robust editor foundation (in progress)
 - [ ] Fix canvas transform semantics, coordinate consistency, and non-destructive operations
+- [x] Fix pre-change autosave scheduling and atomic layer restoration (committed; QA pending)
 - [ ] Introduce a typed document schema and migration support
 - [ ] Add real selection and cropping UI, not prompt-based crop
-- [ ] Add unit/integration/browser tests and continuous integration
+- [x] Add initial browser smoke-test page and Chromium GitHub Actions workflow (committed; run results not yet verified)
+- [ ] Expand automated unit/integration/browser test coverage and verify CI passes
 - [ ] Support autosave, recovery, image orientation, and accessible controls
 - [ ] Add zoom/pan with stable pointer mapping and touch support
 - [x] Add persistent layer locking (committed; browser QA pending)
