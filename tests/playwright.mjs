@@ -16,9 +16,11 @@ try{
   await page.waitForFunction(()=>document.querySelector('#result')?.textContent!=='RUNNING',{timeout:20000});
   const result=await page.locator('#result').innerText();
   if(!result.startsWith('PASS:'))throw Error(engine+' '+(mobile?'mobile':'desktop')+': '+result);
-  const frame=page.frameLocator('#app');
-  const canvas=frame.locator('#canvas');
-  await frame.locator('[data-tool="select"]').click();
+  // Run pointer interactions in a fresh editor, not the smoke-test iframe.
+  // The smoke page also mutates editor state and may invalidate a selection.
+  await page.goto('http://127.0.0.1:8765/index.html');
+  const canvas=page.locator('#canvas');
+  await page.locator('[data-tool="select"]').click();
   const box=await canvas.boundingBox();
   if(!box)throw Error('Canvas not visible');
   const from={x:box.x+box.width*.2,y:box.y+box.height*.2};
