@@ -8,7 +8,7 @@ const browser=await browserType.launch({headless:true});
 try{
  await new Promise(resolve=>setTimeout(resolve,1200));
  for(const mobile of [false,true]){
-  const context=await browser.newContext(mobile?{...devices['iPhone 13'],browserName:undefined}:{viewport:{width:1440,height:900}});
+  const context=await browser.newContext(mobile?(engine==='firefox'?{viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true}: {...devices['iPhone 13'],browserName:undefined}):{viewport:{width:1440,height:900}});
   const page=await context.newPage();
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
