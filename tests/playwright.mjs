@@ -21,7 +21,17 @@ try{
   await page.goto('http://127.0.0.1:8765/index.html');
   const canvas=page.locator('#canvas');
   await page.locator('[data-tool="select"]').click();
-  if(mobile){
+  if(mobile&&engine==='chromium'){
+    const box=await canvas.boundingBox();
+    const session=await context.newCDPSession(page);
+    const start={x:Math.round(box.x+box.width*.2),y:Math.round(box.y+box.height*.2)};
+    const finish={x:Math.round(box.x+box.width*.6),y:Math.round(box.y+box.height*.6)};
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});
+    for(let i=1;i<=8;i++)await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:Math.round(start.x+(finish.x-start.x)*i/8),y:Math.round(start.y+(finish.y-start.y)*i/8),id:1}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    const selected=await canvas.evaluate(()=>window.eval('selection'));
+    if(!selected||selected.w<100||selected.h<100)throw Error('Chromium real touch selection failed: '+JSON.stringify(selected));
+  }else if(mobile){
     // Playwright's mouse API is not a touch gesture in mobile contexts.
     // Verify mobile selection/crop using the accessible Select all control.
     await page.locator('#selectall').click();
@@ -43,7 +53,7 @@ try{
   const cropDebug=await canvas.evaluate(()=>{const button=document.getElementById('crop');let confirmations=0,alerts=[];window.confirm=()=>{confirmations++;return true};window.alert=m=>alerts.push(m);const before=window.eval('selection');button.click();return {confirmations,alerts,disabled:button.disabled,selection:before,after:window.eval('selection'),dimensions:[document.getElementById('canvas').width,document.getElementById('canvas').height]}});
   console.log(engine,mobile?'mobile':'desktop','crop diagnostics',JSON.stringify(cropDebug));
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
-  const expected=mobile?[1000,700]:[400,280];
+  const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[400,280];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   if(errors.length)throw Error(errors.join('; '));
