@@ -23,6 +23,10 @@ document.getElementById('app').onload=()=>{
  check(d.querySelectorAll('#layers li').length===3,'redo');
  const png=d.getElementById('canvas').toDataURL('image/png');
  check(png.startsWith('data:image/png;base64,'),'canvas PNG');
+ const app=w;const snap=app.capture();check(app.validateDocument({format:'photosoap',version:1,...snap}).version===2,'v1 migration');
+ let rejected=false;try{app.validateDocument({...snap,width:9000})}catch(e){rejected=true}check(rejected,'oversize rejected');
+ rejected=false;try{app.validateDocument({...snap,layers:[{...snap.layers[0],x:Infinity}]})}catch(e){rejected=true}check(rejected,'invalid layer rejected');
+ d.getElementById('selectall').click();check(app.selection.w===1000,'select all');d.getElementById('deselect').click();check(app.selection===null,'deselect');
  out.textContent='PASS: editor smoke tests';
  }catch(e){out.textContent='FAIL: '+e.message}
  },350);
