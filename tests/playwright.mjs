@@ -68,6 +68,13 @@ try{
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
   const recovered=await page.locator('#layers li').count();
   if(recovered!==savedCount)throw Error('Autosave recovery failed: '+recovered+' / '+savedCount);
+  // Rapid history clicks must not race asynchronous canvas restoration.
+  await page.evaluate(()=>{document.getElementById('rectangle').click();document.getElementById('ellipse').click();document.getElementById('undo').click();document.getElementById('undo').click()});
+  await page.waitForTimeout(700);
+  const afterUndo=await page.locator('#layers li').count();
+  if(afterUndo!==savedCount+1)throw Error('Rapid undo history corrupted: '+afterUndo);
+  await page.locator('#redo').click();
+  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount+2);
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
