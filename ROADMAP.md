@@ -61,3 +61,6 @@ A phase is complete only after its acceptance tests pass in an actual browser, a
 - [x] Pan-view mode with pointer drag (committed; QA pending)
 - [x] Zoom width/height scaled consistently to preserve aspect ratio (committed; QA pending)
 - [ ] Verify panning behavior in Chromium and mobile browsers
+
+- [x] Fix rectangle selection drag origin, crop pixel alignment, selection-free export and layer rotation geometry (committed; QA pending)
+- [ ] Verify selection/crop/rotation with browser image assertions
