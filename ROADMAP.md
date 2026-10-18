@@ -55,3 +55,9 @@ The current implementation is a single HTML prototype, not a production-ready Ph
 
 ## Release gate
 A phase is complete only after its acceptance tests pass in an actual browser, automated checks run successfully, regression issues are resolved, and changes are reviewed and deployed. Do not claim phase completion from code commits alone.
+
+
+## Phase 1 recent implementation log
+- [x] Pan-view mode with pointer drag (committed; QA pending)
+- [x] Zoom width/height scaled consistently to preserve aspect ratio (committed; QA pending)
+- [ ] Verify panning behavior in Chromium and mobile browsers
