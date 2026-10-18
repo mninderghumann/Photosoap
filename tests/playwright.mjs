@@ -32,7 +32,9 @@ try{
   // Confirm synchronously inside the editor frame; Firefox mobile emulation can
   // dismiss native modal dialogs before the asynchronous Playwright handler runs.
   await canvas.evaluate(()=>{window.confirm=()=>true;});
-  await frame.locator('#crop').click();
+  // Invoke the crop button in the editor document: avoids Firefox's
+  // unsupported mobile viewport scroll/click targeting in desktop emulation.
+  await canvas.evaluate(()=>document.getElementById('crop').click());
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
   if(Math.abs(cropped[0]-400)>4||Math.abs(cropped[1]-280)>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
