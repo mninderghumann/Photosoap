@@ -15,3 +15,35 @@ jobs:
           sleep 2
           chromium --headless --no-sandbox --disable-dev-shm-usage --disable-gpu --virtual-time-budget=6000 --dump-dom http://127.0.0.1:8765/tests/smoke.html > /tmp/photosoap-smoke.html
           cat /tmp/photosoap-smoke.html | grep 'PASS: editor smoke tests'
+      - name: Print browser failure details
+        if: failure()
+        run: tail -c 12000 /tmp/photosoap-smoke.html || true
+
+  firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Firefox
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps firefox
+      - name: Run Firefox browser tests
+        run: node tests/playwright.mjs firefox
+  webkit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright WebKit
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps webkit
+      - name: Run Safari-engine and mobile touch tests
+        run: node tests/playwright.mjs webkit
