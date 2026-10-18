@@ -15,6 +15,7 @@ PhotoSoap aims to combine an accessible design studio, advanced raster editor, q
 - [ ] Add unit/integration/browser tests and continuous integration
 - [ ] Support autosave, recovery, image orientation, and accessible controls
 - [ ] Add zoom/pan with stable pointer mapping and touch support
+- [x] Add persistent layer locking (committed; browser QA pending)
 - [ ] Add reliable image decoding, safe limits, and large-file memory management
 
 ## Phase 2: Design studio (not started)
