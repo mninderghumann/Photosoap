@@ -62,6 +62,8 @@ try{
   const saved=await page.evaluate(()=>localStorage.getItem('photosoap-autosave-v1'));
   if(!saved)throw Error('Autosave was not written');
   const savedCount=JSON.parse(saved).layers.length;
+  // Restore prompt runs during page initialization, before evaluate() can override it.
+  await page.addInitScript(()=>{window.confirm=()=>true});
   await page.reload();
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
   const recovered=await page.locator('#layers li').count();
