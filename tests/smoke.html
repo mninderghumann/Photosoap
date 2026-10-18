@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>PhotoSoap smoke test</title><div id="result">RUNNING</div><iframe id="app" src="../index.html" style="width:1100px;height:850px"></iframe><script>
+const out=document.getElementById('result');
+document.getElementById('app').onload=()=>{
+ try {
+ const w=document.getElementById('app').contentWindow,d=w.document;
+ const check=(condition,message)=>{if(!condition)throw Error(message)};
+ check(d.getElementById('canvas').width===1000,'canvas width');
+ check(d.querySelectorAll('#layers li').length===1,'initial background');
+ d.getElementById('add').click();
+ check(d.querySelectorAll('#layers li').length===2,'add layer');
+ d.getElementById('lock').click();
+ check(d.querySelector('#layers li.active').textContent.includes('🔒'),'layer locking');
+ d.getElementById('lock').click();
+ d.getElementById('rectangle').click();
+ check(d.querySelectorAll('#layers li').length===3,'shape creation');
+ d.getElementById('undo').click();
+ setTimeout(()=>{
+ try{
+ check(d.querySelectorAll('#layers li').length===2,'undo');
+ d.getElementById('redo').click();
+ setTimeout(()=>{
+ try{
+ check(d.querySelectorAll('#layers li').length===3,'redo');
+ const png=d.getElementById('canvas').toDataURL('image/png');
+ check(png.startsWith('data:image/png;base64,'),'canvas PNG');
+ out.textContent='PASS: editor smoke tests';
+ }catch(e){out.textContent='FAIL: '+e.message}
+ },350);
+ }catch(e){out.textContent='FAIL: '+e.message}
+ },350);
+ }catch(e){out.textContent='FAIL: '+e.message}
+};
+</script>
