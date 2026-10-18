@@ -87,7 +87,7 @@ try{
     window.alert=oldAlert;
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
-  if(budget.after>3)throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  if(budget.after!==budget.before||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
