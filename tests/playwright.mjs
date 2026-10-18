@@ -29,7 +29,9 @@ try{
   await page.mouse.up();
   const dims=await canvas.evaluate(c=>{const s=window.eval('selection');return {w:s?.w,h:s?.h}});
   if(Math.abs(dims.w-400)>3||Math.abs(dims.h-280)>3)throw Error('Real pointer selection failed: '+JSON.stringify(dims));
-  page.on('dialog',dialog=>dialog.accept());
+  // Confirm synchronously inside the editor frame; Firefox mobile emulation can
+  // dismiss native modal dialogs before the asynchronous Playwright handler runs.
+  await canvas.evaluate(()=>{window.confirm=()=>true;});
   await frame.locator('#crop').click();
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
   if(Math.abs(cropped[0]-400)>4||Math.abs(cropped[1]-280)>4)throw Error('Crop dimensions failed: '+cropped);
