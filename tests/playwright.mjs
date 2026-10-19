@@ -166,7 +166,7 @@ try{
     window.alert=oldAlert;
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
-  if(budget.after!==budget.before||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  if(budget.after<=budget.before||budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Phase 2 design preset must resize all layers and remain undoable.
   await page.locator('#preset').selectOption('1200x628');
   await page.locator('#applypreset').click();
