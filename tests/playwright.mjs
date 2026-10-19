@@ -118,7 +118,7 @@ try{
   const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=8;c.height=6;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,8,6);return c.toDataURL('image/png').split(',')[1]});
   await page.locator('#file').setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,importedBefore+1);
-  const imported=await page.evaluate(()=>{const l=window.eval('layers').at(-1),d=l.canvas.getContext('2d').getImageData(500,350,1,1).data;return {name:l.name,pixel:[...d]}});
+  const imported=await page.evaluate(()=>{const l=window.eval('layers').at(-1),d=l.canvas.getContext('2d').getImageData(Math.floor(l.canvas.width/2),Math.floor(l.canvas.height/2),1,1).data;return {name:l.name,pixel:[...d]}});
   if(imported.name!=='sample.png'||imported.pixel[0]<200||imported.pixel[3]!==255)throw Error('Decoded image import failed: '+JSON.stringify(imported));
   // Pixel budget prevents excessive full-size canvas allocations.
   const budget=await page.evaluate(()=>{
