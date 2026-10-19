@@ -214,6 +214,16 @@ try{
     return {count:data.pages.length,active:data.activePage,valid:data.pages.every(p=>validateDocument(p.document).version===2)};
   });
   if(pages.count!==3||pages.active!==2||!pages.valid)throw Error('Multi-page project serialization failed: '+JSON.stringify(pages));
+  // Validate standalone multi-page PDF structure and JPEG object payloads.
+  const pdfCheck=await page.evaluate(()=>{
+    const jpg=Uint8Array.from([255,216,255,217]);
+    const blob=pdfBytes([{width:320,height:240,bytes:jpg},{width:640,height:480,bytes:jpg}]);
+    return blob.arrayBuffer().then(buffer=>{
+      const bytes=new Uint8Array(buffer),text=new TextDecoder('latin1').decode(bytes);
+      return {mime:blob.type,prefix:text.slice(0,8),pages:(text.match(/\/Type \/Page \/Parent/g)||[]).length,images:(text.match(/\/Subtype \/Image/g)||[]).length,mediaBoxes:text.includes('/MediaBox [0 0 320 240]')&&text.includes('/MediaBox [0 0 640 480]'),xref:text.includes('xref\\n0 9\\n'),trailer:text.includes('%%EOF'),jpeg:bytes.filter((v,i)=>v===255&&bytes[i+1]===216).length};
+    });
+  });
+  if(pdfCheck.mime!=='application/pdf'||!pdfCheck.prefix.startsWith('%PDF-1.4')||pdfCheck.pages!==2||pdfCheck.images!==2||!pdfCheck.mediaBoxes||!pdfCheck.xref||!pdfCheck.trailer||pdfCheck.jpeg!==2)throw Error('Multi-page PDF structure invalid: '+JSON.stringify(pdfCheck));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
