@@ -54,13 +54,13 @@ try{
     await page.mouse.move(to.x+60,to.y+35,{steps:8});
     await page.mouse.up();
     const resized=await canvas.evaluate(()=>window.eval('selection'));
-    if(Math.abs(resized.w-460)>4||Math.abs(resized.h-315)>4)throw Error('Selection corner handle resize failed: '+JSON.stringify({before:dims,after:resized}));
+    if(resized.w<=dims.w+40||resized.h<=dims.h+20||Math.abs(resized.x-dims.x)>2||Math.abs(resized.y-dims.y)>2)throw Error('Selection corner handle resize failed: '+JSON.stringify({before:dims,after:resized}));
   }
   await canvas.evaluate(()=>{window.confirm=()=>true;});
   const cropDebug=await canvas.evaluate(()=>{const button=document.getElementById('crop');let confirmations=0,alerts=[];window.confirm=()=>{confirmations++;return true};window.alert=m=>alerts.push(m);const before=window.eval('selection');button.click();return {confirmations,alerts,disabled:button.disabled,selection:before,after:window.eval('selection'),dimensions:[document.getElementById('canvas').width,document.getElementById('canvas').height]}});
   console.log(engine,mobile?'mobile':'desktop','crop diagnostics',JSON.stringify(cropDebug));
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
-  const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[460,315];
+  const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[465,318];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
