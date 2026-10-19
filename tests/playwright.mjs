@@ -87,6 +87,22 @@ try{
     await page.locator('#fit').click();
     await page.setViewportSize({width:1440,height:900});
   }
+  // Editable shape drag and corner resize must update geometry without flattening metadata.
+  await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click();document.querySelector('[data-tool="select"]').click()});
+  const geometryBefore=await page.evaluate(()=>{const l=active();return {id:l.id,x:l.shapeData.x,y:l.shapeData.y,w:l.shapeData.w,h:l.shapeData.h}});
+  const editorBox=await canvas.boundingBox();
+  if(!editorBox)throw Error('Editor canvas missing for object transform test');
+  const pixelPoint=(x,y)=>({x:editorBox.x+x*editorBox.width/1000,y:editorBox.y+y*editorBox.height/700});
+  if(!mobile){
+    const origin=pixelPoint(geometryBefore.x+geometryBefore.w/2,geometryBefore.y+geometryBefore.h/2);
+    await page.mouse.move(origin.x,origin.y);await page.mouse.down();await page.mouse.move(origin.x+20,origin.y+15,{steps:5});await page.mouse.up();
+    const moved=await page.evaluate(()=>{const d=active().shapeData;return {x:d.x,y:d.y,w:d.w,h:d.h}});
+    if(moved.x===geometryBefore.x&&moved.y===geometryBefore.y)throw Error('Shape direct dragging did not move');
+    const corner=pixelPoint(moved.x+moved.w,moved.y+moved.h);
+    await page.mouse.move(corner.x,corner.y);await page.mouse.down();await page.mouse.move(corner.x+20,corner.y+15,{steps:5});await page.mouse.up();
+    const resizedShape=await page.evaluate(()=>active().shapeData);
+    if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed');
+  }
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
   await page.waitForTimeout(1600);
