@@ -92,7 +92,8 @@ try{
   const geometryBefore=await page.evaluate(()=>{const l=active();return {id:l.id,x:l.shapeData.x,y:l.shapeData.y,w:l.shapeData.w,h:l.shapeData.h}});
   const editorBox=await canvas.boundingBox();
   if(!editorBox)throw Error('Editor canvas missing for object transform test');
-  const pixelPoint=(x,y)=>({x:editorBox.x+x*editorBox.width/1000,y:editorBox.y+y*editorBox.height/700});
+  const actualCanvasSize=await canvas.evaluate(c=>({width:c.width,height:c.height}));
+  const pixelPoint=(x,y)=>({x:editorBox.x+x*editorBox.width/actualCanvasSize.width,y:editorBox.y+y*editorBox.height/actualCanvasSize.height});
   if(!mobile){
     const origin=pixelPoint(geometryBefore.x+geometryBefore.w/2,geometryBefore.y+geometryBefore.h/2);
     await page.mouse.move(origin.x,origin.y);await page.mouse.down();await page.mouse.move(origin.x+20,origin.y+15,{steps:5});await page.mouse.up();
