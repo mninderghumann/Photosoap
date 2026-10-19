@@ -167,6 +167,15 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after<=budget.before||budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
+  await page.locator('#gridsize').fill('50');
+  await page.locator('#snapgrid').check();
+  await page.locator('#layerx').fill('73');
+  await page.locator('#layery').fill('124');
+  await page.locator('#applyposition').click();
+  const snapped=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]});
+  if(snapped.join(',')!=='50,100')throw Error('Grid position snapping failed: '+snapped);
+  await page.locator('#snapgrid').uncheck();
   // Phase 2 numeric positioning sets exact coordinates and supports undo.
   await page.locator('#layerx').fill('37');
   await page.locator('#layery').fill('-18');
