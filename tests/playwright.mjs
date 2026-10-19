@@ -167,6 +167,12 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after<=budget.before||budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  // Phase 2 numeric positioning sets exact coordinates and supports undo.
+  await page.locator('#layerx').fill('37');
+  await page.locator('#layery').fill('-18');
+  await page.locator('#applyposition').click();
+  const positioned=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]});
+  if(positioned.join(',')!=='37,-18')throw Error('Precise layer positioning failed: '+positioned);
   // Phase 2 layer alignment is undoable and respects locked layers.
   const alignBefore=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return {x:l.x,y:l.y}});
   await page.locator('#alignlayer').selectOption('right');
