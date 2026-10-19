@@ -233,7 +233,10 @@ try{
       unsupportedVersion:rejects({version:99}),
       oversizedLayerName:rejects({layers:[{...valid.layers[0],name:'x'.repeat(201)}]}),
       negativeOpacity:rejects({layers:[{...valid.layers[0],opacity:-.1}]}),
-      invalidData:rejects({layers:[{...valid.layers[0],data:'not-an-image'}]})
+      invalidData:rejects({layers:[{...valid.layers[0],data:'not-an-image'}]}),
+      invalidVisibility:rejects({layers:[{...valid.layers[0],visible:'false'}]}),
+      invalidLock:rejects({layers:[{...valid.layers[0],locked:1}]}),
+      legacyDefaults:(()=>{const normalized=validateDocument({...valid,format:undefined,version:1});return normalized.version===2&&normalized.layers[0].visible===true&&normalized.layers[0].locked===false})()
     };
     return {checks,unchanged:JSON.stringify(current)===JSON.stringify(window.eval('layers').map(l=>l.id))};
   });
