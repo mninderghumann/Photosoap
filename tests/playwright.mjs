@@ -220,7 +220,7 @@ try{
     const blob=pdfBytes([{width:320,height:240,bytes:jpg},{width:640,height:480,bytes:jpg}]);
     return blob.arrayBuffer().then(buffer=>{
       const bytes=new Uint8Array(buffer),text=new TextDecoder('latin1').decode(bytes);
-      return {mime:blob.type,prefix:text.slice(0,8),pages:(text.match(/\/Type \/Page \/Parent/g)||[]).length,images:(text.match(/\/Subtype \/Image/g)||[]).length,mediaBoxes:text.includes('/MediaBox [0 0 320 240]')&&text.includes('/MediaBox [0 0 640 480]'),xref:text.includes('xref\\n0 9\\n'),trailer:text.includes('%%EOF'),jpeg:bytes.filter((v,i)=>v===255&&bytes[i+1]===216).length};
+      return {mime:blob.type,prefix:text.slice(0,8),pages:(text.match(/\/Type \/Page \/Parent/g)||[]).length,images:(text.match(/\/Subtype \/Image/g)||[]).length,mediaBoxes:text.includes('/MediaBox [0 0 320 240]')&&text.includes('/MediaBox [0 0 640 480]'),xref:/xref\\s+0\\s+9\\s/.test(text),trailer:text.includes('%%EOF'),jpeg:bytes.filter((v,i)=>v===255&&bytes[i+1]===216).length};
     });
   });
   if(pdfCheck.mime!=='application/pdf'||!pdfCheck.prefix.startsWith('%PDF-1.4')||pdfCheck.pages!==2||pdfCheck.images!==2||!pdfCheck.mediaBoxes||!pdfCheck.xref||!pdfCheck.trailer||pdfCheck.jpeg!==2)throw Error('Multi-page PDF structure invalid: '+JSON.stringify(pdfCheck));
