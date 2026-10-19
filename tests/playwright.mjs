@@ -154,10 +154,10 @@ try{
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,beforeRepeat+1);
   const inputReset=await page.locator('#file').evaluate(el=>el.value==='');
   if(!inputReset)throw Error('Image file input was not reset after import');
-  // Pixel budget prevents excessive full-size canvas allocations.
+  // A 6MP canvas with seven layers approaches the 48MP layer memory budget.
   const budget=await page.evaluate(()=>{
     const size=document.getElementById('resize'),oldPrompt=window.prompt;
-    window.prompt=m=>m.includes('width')?'6000':'2500';
+    window.prompt=m=>m.includes('width')?'3000':'2000';
     size.click();window.prompt=oldPrompt;
     const before=document.querySelectorAll('#layers li').length;
     const oldAlert=window.alert;let message='';
