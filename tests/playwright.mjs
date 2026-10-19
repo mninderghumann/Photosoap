@@ -113,6 +113,8 @@ try{
   await page.waitForFunction(()=>document.querySelectorAll('#layers li').length===1);
   await page.locator('#pagepicker').selectOption('0');
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
+  // Restore the single-page fixture before the independent page-roundtrip tests below.
+  await page.evaluate(()=>{pageRecords=[{name:'Page 1',snapshot:capture()}];pageIndex=0;pageSequence=1;updatePagePicker();scheduleAutosave()});
   // Rapid history clicks must not race asynchronous canvas restoration.
   await page.evaluate(()=>{document.getElementById('rectangle').click();document.getElementById('ellipse').click();document.getElementById('undo').click();document.getElementById('undo').click()});
   await page.waitForTimeout(700);
