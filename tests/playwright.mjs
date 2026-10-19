@@ -179,11 +179,11 @@ try{
   // Free a layer slot after the memory-limit stress test before testing duplication.
   await page.locator('#delete').click();
   // Offset duplication preserves the source and selects the newly created layer.
-  const beforeDuplicate=await page.evaluate(()=>window.eval('layers').length);
+  const beforeDuplicate=await page.evaluate(()=>({count:window.eval('layers').length,source:(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]})()}));
   await page.locator('#duplicateoffset').fill('24');
   await page.locator('#offsetduplicate').click();
   const duplicateResult=await page.evaluate(()=>({count:window.eval('layers').length,active:(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]})()}));
-  if(duplicateResult.count!==beforeDuplicate+1||duplicateResult.active.join(',')!=='74,124')throw Error('Offset duplication failed: '+JSON.stringify(duplicateResult));
+  if(duplicateResult.count!==beforeDuplicate.count+1||duplicateResult.active[0]!==beforeDuplicate.source[0]+24||duplicateResult.active[1]!==beforeDuplicate.source[1]+24)throw Error('Offset duplication failed: '+JSON.stringify(duplicateResult));
   // Phase 2 numeric positioning sets exact coordinates and supports undo.
   await page.locator('#layerx').fill('37');
   await page.locator('#layery').fill('-18');
