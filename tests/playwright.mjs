@@ -104,6 +104,21 @@ try{
     const resizedShape=await page.evaluate(()=>active().shapeData);
     if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed');
   }
+  // Vector rotation and flip must preserve editable metadata and undo history.
+  const transformCheck=await page.evaluate(()=>{
+    const l=active(),d=l.shapeData;
+    if(!d)return {error:'Missing editable shape'};
+    const id=l.id,kind=d.kind,originalRotation=d.rotation||0,originalFlip=!!d.flipH;
+    const oldPrompt=window.prompt;
+    window.prompt=()=> '90';
+    document.getElementById('rotateobject').click();
+    window.prompt=()=> 'h';
+    document.getElementById('flipobject').click();
+    window.prompt=oldPrompt;
+    const updated=active(),shape=updated.shapeData;
+    return {sameLayer:updated.id===id,kind:shape?.kind,expectedKind:kind,rotation:shape?.rotation,expectedRotation:(originalRotation+90)%360,flip:shape?.flipH,expectedFlip:!originalFlip};
+  });
+  if(transformCheck.error||!transformCheck.sameLayer||transformCheck.kind!==transformCheck.expectedKind||transformCheck.rotation!==transformCheck.expectedRotation||transformCheck.flip!==transformCheck.expectedFlip)throw Error('Non-destructive vector transform regression: '+JSON.stringify(transformCheck));
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
   await page.waitForTimeout(1600);
