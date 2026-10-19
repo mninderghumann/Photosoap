@@ -166,6 +166,22 @@ try{
     catch{return true}
   });
   if(!bounds)throw Error('Large image pixel limit not enforced');
+  // Reject malformed project metadata without changing the active editor.
+  const schema=await page.evaluate(()=>{
+    const current=window.eval('layers').map(l=>l.id);
+    const valid={format:'photosoap',version:2,width:10,height:10,selected:1,layers:[{id:1,name:'A',data:'data:image/png;base64,AAAA',x:0,y:0,opacity:1,brightness:100,contrast:100}]};
+    const rejects=patch=>{try{validateDocument({...valid,...patch});return false}catch{return true}};
+    const checks={
+      duplicateIds:rejects({layers:[valid.layers[0],{...valid.layers[0]}]}),
+      unknownSelection:rejects({selected:2}),
+      unsupportedVersion:rejects({version:99}),
+      oversizedLayerName:rejects({layers:[{...valid.layers[0],name:'x'.repeat(201)}]}),
+      negativeOpacity:rejects({layers:[{...valid.layers[0],opacity:-.1}]}),
+      invalidData:rejects({layers:[{...valid.layers[0],data:'not-an-image'}]})
+    };
+    return {checks,unchanged:JSON.stringify(current)===JSON.stringify(window.eval('layers').map(l=>l.id))};
+  });
+  if(!schema.unchanged||Object.values(schema.checks).some(ok=>!ok))throw Error('Document validation regression: '+JSON.stringify(schema));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
