@@ -199,6 +199,7 @@ try{
   // Dragging with grid snap enabled must land on exact grid coordinates.
   await page.locator('#snapgrid').check();
   await page.locator('[data-tool="move"]').click();
+  await page.evaluate(()=>{window.eval('panMode=false');document.getElementById('canvas').scrollIntoView({block:'center'})});
   const box=await canvas.boundingBox();
   const sx=box.x+box.width*.4,sy=box.y+box.height*.4;
   await page.mouse.move(sx,sy);
