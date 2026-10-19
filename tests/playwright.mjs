@@ -167,6 +167,12 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after<=budget.before||budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  // Phase 2 layer alignment is undoable and respects locked layers.
+  const alignBefore=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return {x:l.x,y:l.y}});
+  await page.locator('#alignlayer').selectOption('right');
+  await page.locator('#applyalign').click();
+  const alignAfter=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return {x:l.x,y:l.y}});
+  if(alignAfter.x!==0)throw Error('Layer right alignment failed: '+JSON.stringify({alignBefore,alignAfter}));
   // Phase 2 design preset must resize all layers and remain undoable.
   await page.locator('#preset').selectOption('1200x628');
   await page.locator('#applypreset').click();
