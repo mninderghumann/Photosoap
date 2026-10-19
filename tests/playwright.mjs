@@ -104,25 +104,6 @@ try{
     const resizedShape=await page.evaluate(()=>active().shapeData);
     if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed');
   }
-  // Grouping and proportional scaling must preserve independent editable members.
-  const groupCheck=await page.evaluate(()=>{
-    const first=active();
-    if(!first?.shapeData)return {error:'Missing first vector'};
-    const firstId=first.id;
-    document.getElementById('ellipse').click();
-    const second=active(),secondId=second.id;
-    multiSelected=new Set([firstId,secondId]);
-    document.getElementById('grouplayers').click();
-    const id=active().groupId;
-    const before=layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}));
-    const previousPrompt=window.prompt;
-    window.prompt=()=> '150';
-    document.getElementById('scaleobject').click();
-    window.prompt=previousPrompt;
-    const after=layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}));
-    return {id,firstId,secondId,before,after};
-  });
-  if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
   // Vector rotation and flip must preserve editable metadata and undo history.
   const transformCheck=await page.evaluate(()=>{
     const l=active(),d=l.shapeData;
@@ -223,6 +204,25 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  // Grouping and proportional scaling must preserve independent editable members.
+  const groupCheck=await page.evaluate(()=>{
+    const first=active();
+    if(!first?.shapeData)return {error:'Missing first vector'};
+    const firstId=first.id;
+    document.getElementById('ellipse').click();
+    const second=active(),secondId=second.id;
+    multiSelected=new Set([firstId,secondId]);
+    document.getElementById('grouplayers').click();
+    const id=active().groupId;
+    const before=layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}));
+    const previousPrompt=window.prompt;
+    window.prompt=()=> '150';
+    document.getElementById('scaleobject').click();
+    window.prompt=previousPrompt;
+    const after=layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}));
+    return {id,firstId,secondId,before,after};
+  });
+  if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
