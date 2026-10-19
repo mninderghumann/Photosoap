@@ -69,6 +69,21 @@ try{
     if(Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
   }
+  if(!mobile){
+    await page.locator('#zoom').fill('150');
+    const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=180;v.scrollTop=130;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
+    await page.locator('#pan').click();
+    const panBox=await canvas.boundingBox();
+    await page.mouse.move(panBox.x+panBox.width*.5,panBox.y+panBox.height*.5);
+    await page.mouse.down();
+    await page.mouse.move(panBox.x+panBox.width*.5-70,panBox.y+panBox.height*.5-50,{steps:5});
+    await page.mouse.up();
+    const afterPan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
+    if(JSON.stringify(beforePan.layers)!==JSON.stringify(afterPan.layers))throw Error('Pan changed layer coordinates');
+    if(afterPan.scroll[0]===beforePan.scroll[0]&&afterPan.scroll[1]===beforePan.scroll[1])throw Error('Pan did not scroll viewport: '+JSON.stringify({beforePan,afterPan}));
+    await page.locator('#pan').click();
+    await page.locator('#fit').click();
+  }
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
   await page.waitForTimeout(1600);
