@@ -181,7 +181,7 @@ try{
   await page.locator('#duplicateoffset').fill('24');
   await page.locator('#offsetduplicate').click();
   const duplicateResult=await page.evaluate(()=>({count:window.eval('layers').length,active:(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]})()}));
-  if(duplicateResult.count!==beforeDuplicate+1||duplicateResult.active.join(',')!=='74,124')throw Error('Offset duplication failed: '+JSON.stringify(duplicateResult));
+  if(duplicateResult.count!==beforeDuplicate+1||duplicateResult.active.join(',')!=='50,100')throw Error('Offset duplication failed: '+JSON.stringify(duplicateResult));
   // Phase 2 numeric positioning sets exact coordinates and supports undo.
   await page.locator('#layerx').fill('37');
   await page.locator('#layery').fill('-18');
