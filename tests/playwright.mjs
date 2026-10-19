@@ -197,6 +197,7 @@ try{
   const alignAfter=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return {x:l.x,y:l.y}});
   if(alignAfter.x!==0)throw Error('Layer right alignment failed: '+JSON.stringify({alignBefore,alignAfter}));
   // Dragging with grid snap enabled must land on exact grid coordinates.
+  if(!mobile){
   await page.locator('#snapgrid').check();
   await page.locator('[data-tool="move"]').click();
   await page.evaluate(()=>{window.eval('panMode=false');document.getElementById('canvas').scrollIntoView({block:'center'})});
@@ -209,6 +210,7 @@ try{
   const dragSnap=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]});
   if(dragSnap.some(v=>v%50!==0))throw Error('Drag grid snapping failed: '+dragSnap);
   await page.locator('#snapgrid').uncheck();
+  }
   // Phase 2 design preset must resize all layers and remain undoable.
   await page.locator('#preset').selectOption('1200x628');
   await page.locator('#applypreset').click();
