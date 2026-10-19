@@ -196,6 +196,18 @@ try{
   await page.locator('#applyalign').click();
   const alignAfter=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return {x:l.x,y:l.y}});
   if(alignAfter.x!==0)throw Error('Layer right alignment failed: '+JSON.stringify({alignBefore,alignAfter}));
+  // Dragging with grid snap enabled must land on exact grid coordinates.
+  await page.locator('#snapgrid').check();
+  await page.locator('[data-tool="move"]').click();
+  const dragSnap=await page.evaluate(()=>{
+    const c=document.getElementById('canvas'),r=c.getBoundingClientRect(),x=r.left+r.width*.4,y=r.top+r.height*.4;
+    const emit=(type,dx,dy)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:9,pointerType:'mouse',clientX:x+dx,clientY:y+dy,buttons:type==='pointerup'?0:1}));
+    emit('pointerdown',0,0);emit('pointermove',17,23);emit('pointerup',17,23);
+    const l=window.eval('layers').find(l=>l.id===window.eval('selected'));
+    return [l.x,l.y];
+  });
+  if(dragSnap.some(v=>v%50!==0))throw Error('Drag grid snapping failed: '+dragSnap);
+  await page.locator('#snapgrid').uncheck();
   // Phase 2 design preset must resize all layers and remain undoable.
   await page.locator('#preset').selectOption('1200x628');
   await page.locator('#applypreset').click();
