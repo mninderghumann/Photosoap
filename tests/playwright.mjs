@@ -31,6 +31,13 @@ try{
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     const selected=await canvas.evaluate(()=>window.eval('selection'));
     if(!selected||selected.w<100||selected.h<100)throw Error('Chromium real touch selection failed: '+JSON.stringify(selected));
+    // Resize the selected region with a second real touch gesture.
+    const corner={x:Math.round(finish.x),y:Math.round(finish.y)};
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...corner,id:2}]});
+    for(let i=1;i<=6;i++)await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:corner.x+Math.round(24*i/6),y:corner.y+Math.round(18*i/6),id:2}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    const resized=await canvas.evaluate(()=>window.eval('selection'));
+    if(!resized||resized.w<=selected.w+10||resized.h<=selected.h+10)throw Error('Chromium touch resize failed: '+JSON.stringify({selected,resized}));
   }else if(mobile){
     // Playwright's mouse API is not a touch gesture in mobile contexts.
     // Verify mobile selection/crop using the accessible Select all control.
