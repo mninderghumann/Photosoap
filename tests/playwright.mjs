@@ -206,9 +206,12 @@ try{
   if(budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Grouping and proportional scaling must preserve independent editable members.
   const groupCheck=await page.evaluate(()=>{
+    const resize=document.getElementById('resize'),savedPrompt=window.prompt;
+    window.prompt=message=>message.includes('width')?'800':'600';
+    resize.click();window.prompt=savedPrompt;
     document.getElementById('rectangle').click();
     const first=active();
-    if(!first?.shapeData)return {error:'Missing first vector'};
+    if(!first?.shapeData)return {error:'Missing first vector after reducing canvas size'};
     const firstId=first.id;
     document.getElementById('ellipse').click();
     const second=active(),secondId=second.id;
