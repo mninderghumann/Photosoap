@@ -48,12 +48,19 @@ try{
     await page.mouse.up();
     const dims=await canvas.evaluate(()=>window.eval('selection'));
     if(Math.abs(dims.w-400)>3||Math.abs(dims.h-280)>3)throw Error('Desktop pointer selection failed: '+JSON.stringify(dims));
+    // Resize the lower-right selection handle using a real pointer gesture.
+    await page.mouse.move(to.x,to.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x+60,to.y+35,{steps:8});
+    await page.mouse.up();
+    const resized=await canvas.evaluate(()=>window.eval('selection'));
+    if(Math.abs(resized.w-460)>4||Math.abs(resized.h-315)>4)throw Error('Selection corner handle resize failed: '+JSON.stringify({before:dims,after:resized}));
   }
   await canvas.evaluate(()=>{window.confirm=()=>true;});
   const cropDebug=await canvas.evaluate(()=>{const button=document.getElementById('crop');let confirmations=0,alerts=[];window.confirm=()=>{confirmations++;return true};window.alert=m=>alerts.push(m);const before=window.eval('selection');button.click();return {confirmations,alerts,disabled:button.disabled,selection:before,after:window.eval('selection'),dimensions:[document.getElementById('canvas').width,document.getElementById('canvas').height]}});
   console.log(engine,mobile?'mobile':'desktop','crop diagnostics',JSON.stringify(cropDebug));
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
-  const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[400,280];
+  const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[460,315];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
