@@ -227,6 +227,19 @@ try{
     return {id,firstId,secondId,before,after};
   });
   if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
+  // Dragging the group bounding-box corner must resize both editable members.
+  if(!mobile){
+    const bounds=await page.evaluate(()=>{const l=active();return l?.groupId?groupBounds(l.groupId):null});
+    if(!bounds||bounds.w<=0||bounds.h<=0)throw Error('Missing group bounds for handle test');
+    const beforeDrag=await page.evaluate(()=>{const id=active().groupId;return layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}))});
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const toScreen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
+    const handle=toScreen(bounds.x+bounds.w,bounds.y+bounds.h),target=toScreen(bounds.x+bounds.w+30,bounds.y+bounds.h+25);
+    await page.mouse.move(handle.x,handle.y);await page.mouse.down();
+    await page.mouse.move(target.x,target.y,{steps:6});await page.mouse.up();
+    const afterDrag=await page.evaluate(()=>{const id=active().groupId;return layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}))});
+    if(afterDrag.length!==beforeDrag.length||afterDrag.some((v,i)=>v.w<=beforeDrag[i].w||v.h<=beforeDrag[i].h))throw Error('Group corner-handle resize regression: '+JSON.stringify({beforeDrag,afterDrag}));
+  }
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
