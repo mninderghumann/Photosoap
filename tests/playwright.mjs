@@ -141,6 +141,12 @@ try{
   // A rotated portrait should have color variation vertically, not horizontally.
   if(jpegResult.top[3]===0||jpegResult.bottom[3]===0||Math.abs(jpegResult.top[0]-jpegResult.bottom[0])<80)
     throw Error('JPEG EXIF orientation not applied: '+JSON.stringify(jpegResult));
+  // Confirm the file input resets so importing the same image twice works.
+  const beforeRepeat=await page.locator('#layers li').count();
+  await page.locator('#file').setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,beforeRepeat+1);
+  const inputReset=await page.locator('#file').evaluate(el=>el.value==='');
+  if(!inputReset)throw Error('Image file input was not reset after import');
   // Pixel budget prevents excessive full-size canvas allocations.
   const budget=await page.evaluate(()=>{
     const size=document.getElementById('resize'),oldPrompt=window.prompt;
