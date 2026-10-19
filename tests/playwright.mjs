@@ -199,13 +199,13 @@ try{
   // Dragging with grid snap enabled must land on exact grid coordinates.
   await page.locator('#snapgrid').check();
   await page.locator('[data-tool="move"]').click();
-  const dragSnap=await page.evaluate(()=>{
-    const c=document.getElementById('canvas'),r=c.getBoundingClientRect(),x=r.left+r.width*.4,y=r.top+r.height*.4;
-    const emit=(type,dx,dy)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:9,pointerType:'mouse',clientX:x+dx,clientY:y+dy,buttons:type==='pointerup'?0:1}));
-    emit('pointerdown',0,0);emit('pointermove',17,23);emit('pointerup',17,23);
-    const l=window.eval('layers').find(l=>l.id===window.eval('selected'));
-    return [l.x,l.y];
-  });
+  const box=await canvas.boundingBox();
+  const sx=box.x+box.width*.4,sy=box.y+box.height*.4;
+  await page.mouse.move(sx,sy);
+  await page.mouse.down();
+  await page.mouse.move(sx+17,sy+23,{steps:4});
+  await page.mouse.up();
+  const dragSnap=await page.evaluate(()=>{const l=window.eval('layers').find(l=>l.id===window.eval('selected'));return [l.x,l.y]});
   if(dragSnap.some(v=>v%50!==0))throw Error('Drag grid snapping failed: '+dragSnap);
   await page.locator('#snapgrid').uncheck();
   // Phase 2 design preset must resize all layers and remain undoable.
