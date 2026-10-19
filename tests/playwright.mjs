@@ -56,6 +56,19 @@ try{
   const expected=mobile?(engine==='chromium'?[400,280]:[1000,700]):[400,280];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
+  // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
+  if(!mobile){
+    await page.locator('#zoom').fill('50');
+    await page.locator('[data-tool="select"]').click();
+    const z=await canvas.boundingBox();
+    await page.mouse.move(z.x+z.width*.1,z.y+z.height*.1);
+    await page.mouse.down();
+    await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
+    await page.mouse.up();
+    const mapped=await canvas.evaluate(()=>window.eval('selection'));
+    if(Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
+    await page.locator('#fit').click();
+  }
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
   await page.waitForTimeout(1600);
