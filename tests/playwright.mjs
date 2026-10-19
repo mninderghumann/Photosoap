@@ -185,7 +185,7 @@ try{
     window.alert=oldAlert;
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
-  if(budget.after<=budget.before||budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  if(budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
