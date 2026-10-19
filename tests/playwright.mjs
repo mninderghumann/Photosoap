@@ -167,6 +167,11 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after!==budget.before||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
+  // Phase 2 design preset must resize all layers and remain undoable.
+  await page.locator('#preset').selectOption('1200x628');
+  await page.locator('#applypreset').click();
+  const presetResult=await page.evaluate(()=>({size:[canvas.width,canvas.height],layers:window.eval('layers').map(l=>[l.canvas.width,l.canvas.height])}));
+  if(presetResult.size.join('x')!=='1200x628'||presetResult.layers.some(d=>d.join('x')!=='1200x628'))throw Error('Design preset resize failed: '+JSON.stringify(presetResult));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
