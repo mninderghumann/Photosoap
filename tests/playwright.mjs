@@ -119,6 +119,7 @@ try{
     return {sameLayer:updated.id===id,kind:shape?.kind,expectedKind:kind,rotation:shape?.rotation,expectedRotation:(originalRotation+90)%360,flip:shape?.flipH,expectedFlip:!originalFlip};
   });
   if(transformCheck.error||!transformCheck.sameLayer||transformCheck.kind!==transformCheck.expectedKind||transformCheck.rotation!==transformCheck.expectedRotation||transformCheck.flip!==transformCheck.expectedFlip)throw Error('Non-destructive vector transform regression: '+JSON.stringify(transformCheck));
+  const transformedLayerId=await page.evaluate(()=>active().id);
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
   await page.waitForTimeout(1600);
@@ -131,6 +132,8 @@ try{
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
   const recovered=await page.locator('#layers li').count();
   if(recovered!==savedCount)throw Error('Autosave recovery failed: '+recovered+' / '+savedCount);
+  const recoveredVector=await page.evaluate(id=>{const l=layers.find(item=>item.id===id);return l?{kind:l.shapeData?.kind,rotation:l.shapeData?.rotation,flip:l.shapeData?.flipH}:null},transformedLayerId);
+  if(!recoveredVector||recoveredVector.kind!==transformCheck.expectedKind||recoveredVector.rotation!==transformCheck.expectedRotation||recoveredVector.flip!==transformCheck.expectedFlip)throw Error('Autosave lost editable vector transform metadata: '+JSON.stringify(recoveredVector));
   // Multi-page autosave must retain inactive page snapshots and active-page selection.
   await page.locator('#pageadd').click();
   await page.locator('#ellipse').click();
