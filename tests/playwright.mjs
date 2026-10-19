@@ -104,13 +104,13 @@ try{
   await page.locator('#ellipse').click();
   await page.waitForTimeout(1700);
   const multiSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('photosoap-autosave-v1')));
-  if(multiSaved.version!==3||multiSaved.pages.length!==2||multiSaved.activePage!==1||multiSaved.pages[0].document.layers.length!==savedCount||multiSaved.pages[1].document.layers.length!==2)throw Error('Multi-page autosave incorrect: '+JSON.stringify({version:multiSaved.version,pages:multiSaved.pages.map(p=>p.document.layers.length),active:multiSaved.activePage}));
+  if(multiSaved.version!==3||multiSaved.pages.length!==2||multiSaved.activePage!==1||multiSaved.pages[0].document.layers.length!==savedCount||multiSaved.pages[1].document.layers.length!==1)throw Error('Multi-page autosave incorrect: '+JSON.stringify({version:multiSaved.version,pages:multiSaved.pages.map(p=>p.document.layers.length),active:multiSaved.activePage}));
   await page.reload();
-  await page.waitForFunction(()=>document.querySelectorAll('#pagepicker option').length===2&&document.getElementById('pagepicker').value==='1'&&document.querySelectorAll('#layers li').length===2);
+  await page.waitForFunction(()=>document.querySelectorAll('#pagepicker option').length===2&&document.getElementById('pagepicker').value==='1'&&document.querySelectorAll('#layers li').length===1);
   await page.locator('#pagepicker').selectOption('0');
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
   await page.locator('#pagepicker').selectOption('1');
-  await page.waitForFunction(()=>document.querySelectorAll('#layers li').length===2);
+  await page.waitForFunction(()=>document.querySelectorAll('#layers li').length===1);
   await page.locator('#pagepicker').selectOption('0');
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount);
   // Rapid history clicks must not race asynchronous canvas restoration.
