@@ -120,6 +120,27 @@ try{
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,importedBefore+1);
   const imported=await page.evaluate(()=>{const l=window.eval('layers').at(-1),d=l.canvas.getContext('2d').getImageData(Math.floor(l.canvas.width/2),Math.floor(l.canvas.height/2),1,1).data;return {name:l.name,pixel:[...d]}});
   if(imported.name!=='sample.png'||imported.pixel[0]<200||imported.pixel[3]!==255)throw Error('Decoded image import failed: '+JSON.stringify(imported));
+  // JPEG EXIF orientation 6 must rotate the decoded image into portrait.
+  // Construct a minimal JPEG with an EXIF orientation tag from a landscape canvas.
+  const jpeg=await page.evaluate(()=>{
+    const c=document.createElement('canvas');c.width=40;c.height=20;
+    const x=c.getContext('2d');x.fillStyle='#f00';x.fillRect(0,0,20,20);x.fillStyle='#00f';x.fillRect(20,0,20,20);
+    return c.toDataURL('image/jpeg',.95).split(',')[1];
+  });
+  const raw=Buffer.from(jpeg,'base64');
+  const exif=Buffer.from([0xff,0xe1,0x00,0x22,0x45,0x78,0x69,0x66,0,0,0x49,0x49,0x2a,0,8,0,0,0,1,0,0x12,1,3,0,1,0,0,0,6,0,0,0,0,0,0,0]);
+  const oriented=Buffer.concat([raw.subarray(0,2),exif,raw.subarray(2)]);
+  const beforeJpeg=await page.locator('#layers li').count();
+  await page.locator('#file').setInputFiles({name:'rotated.jpg',mimeType:'image/jpeg',buffer:oriented});
+  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,beforeJpeg+1);
+  const jpegResult=await page.evaluate(()=>{
+    const l=window.eval('layers').at(-1),c=l.canvas,x=c.getContext('2d'),cx=c.width/2,cy=c.height/2;
+    const pixel=(px,py)=>[...x.getImageData(Math.floor(px),Math.floor(py),1,1).data];
+    return {top:pixel(cx,cy-c.height*.2),bottom:pixel(cx,cy+c.height*.2),left:pixel(cx-c.width*.2,cy),right:pixel(cx+c.width*.2,cy)};
+  });
+  // A rotated portrait should have color variation vertically, not horizontally.
+  if(jpegResult.top[3]===0||jpegResult.bottom[3]===0||Math.abs(jpegResult.top[0]-jpegResult.bottom[0])<80)
+    throw Error('JPEG EXIF orientation not applied: '+JSON.stringify(jpegResult));
   // Pixel budget prevents excessive full-size canvas allocations.
   const budget=await page.evaluate(()=>{
     const size=document.getElementById('resize'),oldPrompt=window.prompt;
