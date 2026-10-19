@@ -228,6 +228,7 @@ try{
   });
   if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
   // Dragging the group bounding-box corner must resize both editable members.
+  await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const bounds=await page.evaluate(()=>{const l=active();return l?.groupId?groupBounds(l.groupId):null});
     if(!bounds||bounds.w<=0||bounds.h<=0)throw Error('Missing group bounds for handle test');
