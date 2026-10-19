@@ -216,6 +216,18 @@ try{
   await page.locator('#applypreset').click();
   const presetResult=await page.evaluate(()=>({size:[canvas.width,canvas.height],layers:window.eval('layers').map(l=>[l.canvas.width,l.canvas.height])}));
   if(presetResult.size.join('x')!=='1200x628'||presetResult.layers.some(d=>d.join('x')!=='1200x628'))throw Error('Design preset resize failed: '+JSON.stringify(presetResult));
+  // Multi-page project roundtrip: independent snapshots, names and active-page selection.
+  await page.locator('#pageadd').click();
+  await page.locator('#pagepicker').selectOption('0');
+  await page.waitForFunction(()=>window.eval('pageIndex')===0);
+  await page.locator('#pageduplicate').click();
+  await page.waitForFunction(()=>window.eval('pageIndex')===2);
+  const pages=await page.evaluate(()=>{
+    rememberPage();
+    const data={format:'photosoap',version:3,activePage:pageIndex,pages:pageRecords.map(p=>({name:p.name,document:p.snapshot}))};
+    return {count:data.pages.length,active:data.activePage,valid:data.pages.every(p=>validateDocument(p.document).version===2)};
+  });
+  if(pages.count!==3||pages.active!==2||!pages.valid)throw Error('Multi-page project serialization failed: '+JSON.stringify(pages));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
