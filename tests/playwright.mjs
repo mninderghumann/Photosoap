@@ -206,6 +206,7 @@ try{
   if(budget.after>8||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
   // Grouping and proportional scaling must preserve independent editable members.
   const groupCheck=await page.evaluate(()=>{
+    document.getElementById('rectangle').click();
     const first=active();
     if(!first?.shapeData)return {error:'Missing first vector'};
     const firstId=first.id;
