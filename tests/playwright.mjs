@@ -73,7 +73,7 @@ try{
     // Cropped test canvas is only ~401px wide; narrow viewport to force real overflow.
     await page.setViewportSize({width:850,height:700});
     await page.locator('#zoom').fill('150');
-    const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=180;v.scrollTop=130;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
+    const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=0;v.scrollTop=0;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
     await page.locator('#pan').click();
     const panBox=await canvas.boundingBox();
     await page.mouse.move(panBox.x+panBox.width*.5,panBox.y+panBox.height*.5);
