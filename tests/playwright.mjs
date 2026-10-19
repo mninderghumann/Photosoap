@@ -92,7 +92,7 @@ try{
   await page.waitForTimeout(1600);
   const saved=await page.evaluate(()=>localStorage.getItem('photosoap-autosave-v1'));
   if(!saved)throw Error('Autosave was not written');
-  const savedCount=JSON.parse(saved).layers.length;
+  const autosave=JSON.parse(saved);const savedDocument=autosave.version===3?autosave.pages?.[autosave.activePage]?.document:autosave;if(!savedDocument||!Array.isArray(savedDocument.layers))throw Error('Autosave document structure invalid');const savedCount=savedDocument.layers.length;
   // Restore prompt runs during page initialization, before evaluate() can override it.
   await page.addInitScript(()=>{window.confirm=()=>true});
   await page.reload();
