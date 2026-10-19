@@ -236,9 +236,10 @@ try{
     const toScreen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
     const handle=toScreen(bounds.x+bounds.w,bounds.y+bounds.h),target=toScreen(bounds.x+bounds.w+30,bounds.y+bounds.h+25);
     await page.mouse.move(handle.x,handle.y);await page.mouse.down();
+    const hitState=await page.evaluate(()=>({tool,panMode,drag,groupResize:!!groupResize,objectResize:!!objectResize,selected:active()?.id}));
     await page.mouse.move(target.x,target.y,{steps:6});await page.mouse.up();
     const afterDrag=await page.evaluate(()=>{const id=active().groupId;return layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}))});
-    if(afterDrag.length!==beforeDrag.length||afterDrag.some((v,i)=>v.w<=beforeDrag[i].w||v.h<=beforeDrag[i].h))throw Error('Group corner-handle resize regression: '+JSON.stringify({beforeDrag,afterDrag}));
+    if(afterDrag.length!==beforeDrag.length||afterDrag.some((v,i)=>v.w<=beforeDrag[i].w||v.h<=beforeDrag[i].h))throw Error('Group corner-handle resize regression: '+JSON.stringify({beforeDrag,afterDrag,hitState,bounds,handle,target,box,size}));
   }
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
