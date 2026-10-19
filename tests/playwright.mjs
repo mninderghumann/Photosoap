@@ -113,6 +113,13 @@ try{
   if(afterUndo!==savedCount+1)throw Error('Rapid undo history corrupted: '+afterUndo);
   await page.locator('#redo').click();
   await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,savedCount+2);
+  // Verify a real file-input image import creates a decoded raster layer.
+  const importedBefore=await page.locator('#layers li').count();
+  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=8;c.height=6;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,8,6);return c.toDataURL('image/png').split(',')[1]});
+  await page.locator('#file').setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,importedBefore+1);
+  const imported=await page.evaluate(()=>{const l=window.eval('layers').at(-1),d=l.canvas.getContext('2d').getImageData(500,350,1,1).data;return {name:l.name,pixel:[...d]}});
+  if(imported.name!=='sample.png'||imported.pixel[0]<200||imported.pixel[3]!==255)throw Error('Decoded image import failed: '+JSON.stringify(imported));
   // Pixel budget prevents excessive full-size canvas allocations.
   const budget=await page.evaluate(()=>{
     const size=document.getElementById('resize'),oldPrompt=window.prompt;
@@ -126,13 +133,6 @@ try{
     return {before,after:document.querySelectorAll('#layers li').length,message};
   });
   if(budget.after!==budget.before||!budget.message.includes('Layer memory budget reached'))throw Error('Large canvas layer budget not enforced: '+JSON.stringify(budget));
-  // Verify a real file-input image import creates a decoded raster layer.
-  const importedBefore=await page.locator('#layers li').count();
-  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=8;c.height=6;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,8,6);return c.toDataURL('image/png').split(',')[1]});
-  await page.locator('#file').setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
-  await page.waitForFunction(n=>document.querySelectorAll('#layers li').length===n,importedBefore+1);
-  const imported=await page.evaluate(()=>{const l=window.eval('layers').at(-1),d=l.canvas.getContext('2d').getImageData(500,350,1,1).data;return {name:l.name,pixel:[...d]}});
-  if(imported.name!=='sample.png'||imported.pixel[0]<200||imported.pixel[3]!==255)throw Error('Decoded image import failed: '+JSON.stringify(imported));
   // Large-file bounds: reject documents exceeding the 16MP canvas budget.
   const bounds=await page.evaluate(()=>{
     try{validateDocument({format:'photosoap',version:2,width:6000,height:6000,layers:[]});return false}
