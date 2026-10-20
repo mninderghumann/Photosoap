@@ -538,6 +538,25 @@ try{
   if(!filename.toLowerCase().endsWith('.png'))throw Error('PNG export download filename invalid: '+filename);
   const exportFailure=await download.failure();
   if(exportFailure)throw Error('PNG export download failed: '+exportFailure);
+  // Phase 4: each supported blend mode must render and survive document validation.
+  const blendQA=await page.evaluate(()=>{
+    const modes=['source-over','multiply','screen','overlay','darken','lighten','color-dodge','color-burn','hard-light','soft-light','difference','exclusion','hue','saturation','color','luminosity'];
+    const layer=active();
+    if(!layer)return {error:'No active layer'};
+    const original=layer.blendMode;
+    const results=[];
+    try{
+      for(let i=0;i<modes.length;i++){
+        layer.blendMode=i;
+        render(false);
+        const saved=capture();
+        const accepted=validateDocument(saved);
+        results.push({mode:modes[i],accepted:accepted.version===2&&saved.layers.some(l=>l.id===layer.id&&l.blendMode===i),rendered:ctx.globalCompositeOperation==='source-over'});
+      }
+    }finally{layer.blendMode=original;render(false)}
+    return results;
+  });
+  if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.rendered))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
