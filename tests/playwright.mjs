@@ -120,6 +120,9 @@ try{
   });
   if(transformCheck.error||!transformCheck.sameLayer||transformCheck.kind!==transformCheck.expectedKind||transformCheck.rotation!==transformCheck.expectedRotation||transformCheck.flip!==transformCheck.expectedFlip)throw Error('Non-destructive vector transform regression: '+JSON.stringify(transformCheck));
   // Phase 2 final QA: rotated corner hit testing and pointer resizing.
+  // The preceding pan test can leave the stage scrolled, clipping pointer handles.
+  await canvas.evaluate(c=>{c.parentElement.scrollLeft=0;c.parentElement.scrollTop=0});
+  await canvas.scrollIntoViewIfNeeded();
   await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
