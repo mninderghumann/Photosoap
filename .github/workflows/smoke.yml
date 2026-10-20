@@ -17,13 +17,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run editor smoke tests
         run: |
-          python3 -m http.server 8765 >/tmp/photosoap-http.log 2>&1 &
-          sleep 2
           node tests/playwright.mjs chromium
           echo 'Chromium Playwright regression suite passed'
-      - name: Print browser failure details
-        if: failure()
-        run: tail -c 12000 /tmp/photosoap-smoke.html || true
 
   firefox:
     runs-on: ubuntu-latest

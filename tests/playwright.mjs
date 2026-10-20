@@ -4,9 +4,19 @@ const engine=process.argv[2]||'chromium';
 const browserType={chromium,firefox,webkit}[engine];
 if(!browserType)throw Error('Unknown browser '+engine);
 const server=spawn('python3',['-m','http.server','8765'],{stdio:'ignore'});
-const browser=await browserType.launch({headless:true});
+let browser;
 try{
- await new Promise(resolve=>setTimeout(resolve,1200));
+ // Wait for the local editor server to respond instead of relying on a fixed sleep.
+ let ready=false;
+ for(let attempt=0;attempt<40;attempt++){
+  try{
+   const response=await fetch('http://127.0.0.1:8765/index.html');
+   if(response.ok){ready=true;break}
+  }catch{}
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ if(!ready)throw Error('Editor HTTP server did not become ready on port 8765');
+ browser=await browserType.launch({headless:true});
  for(const mobile of [false,true]){
   const context=await browser.newContext(mobile?(engine==='firefox'?{viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true}: {...devices['iPhone 13'],browserName:undefined}):{viewport:{width:1440,height:900}});
   const page=await context.newPage();
@@ -492,8 +502,44 @@ try{
     l.locked=wasLocked;refresh();return results;
   });
   for(const [name,ok] of Object.entries(adjustmentQA))if(!ok.ok)throw Error('Phase 3 adjustment regression '+name+': '+JSON.stringify(adjustmentQA));
+  // Phase 3 release gate: feather must not modify lower-layer source pixels.
+  const featherQA=await page.evaluate(()=>{
+    const original=capture();
+    const top=active();
+    if(!top)return {error:'No active layer'};
+    const snapshots=layers.map(l=>({id:l.id,pixels:Array.from(l.canvas.getContext('2d').getImageData(0,0,Math.min(4,l.canvas.width),Math.min(4,l.canvas.height)).data)}));
+    const previous=top.feather??0;
+    top.feather=20;
+    refresh();
+    const serialized=capture();
+    const saved=serialized.layers.find(l=>l.id===top.id);
+    const normalized=validateDocument(serialized).layers.find(l=>l.id===top.id);
+    const unchanged=snapshots.every(before=>{const l=layers.find(item=>item.id===before.id);return !!l&&JSON.stringify(before.pixels)===JSON.stringify(Array.from(l.canvas.getContext('2d').getImageData(0,0,Math.min(4,l.canvas.width),Math.min(4,l.canvas.height)).data))});
+    top.feather=previous;refresh();
+    return {unchanged,persisted:saved?.feather===20,validated:normalized?.feather===20,originalValid:validateDocument(original).version===2};
+  });
+  if(Object.values(featherQA).some(v=>v!==true))throw Error('Phase 3 feather isolation/persistence regression: '+JSON.stringify(featherQA));
+  // Phase 3: PNG export must encode the rendered document dimensions.
+  const pngQA=await page.evaluate(()=>{
+    const output=document.getElementById('canvas');
+    const url=output.toDataURL('image/png');
+    const raw=atob(url.split(',')[1]);
+    const bytes=Uint8Array.from(raw.slice(0,24),ch=>ch.charCodeAt(0));
+    const signature=[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
+    const view=new DataView(bytes.buffer);
+    return {signature,mime:url.startsWith('data:image/png;base64,'),width:view.getUint32(16)===output.width,height:view.getUint32(20)===output.height};
+  });
+  if(Object.values(pngQA).some(v=>v!==true))throw Error('Phase 3 PNG export regression: '+JSON.stringify(pngQA));
+  // Verify the user-facing PNG export action, not just canvas encoding.
+  const pngDownload=page.waitForEvent('download');
+  await page.locator('#save').click();
+  const download=await pngDownload;
+  const filename=download.suggestedFilename();
+  if(!filename.toLowerCase().endsWith('.png'))throw Error('PNG export download filename invalid: '+filename);
+  const exportFailure=await download.failure();
+  if(exportFailure)throw Error('PNG export download failed: '+exportFailure);
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
  }
-}finally{await browser.close();server.kill()}
+}finally{if(browser)await browser.close();server.kill()}
