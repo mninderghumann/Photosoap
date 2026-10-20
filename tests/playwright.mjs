@@ -475,6 +475,23 @@ try{
     return {moveCursor,panCursor,leaveCursor,cancelClears,hiddenGuard};
   });
   for(const [name,ok] of Object.entries(finalQA))if(!ok)throw Error('Phase 2 final acceptance '+name+': '+JSON.stringify(finalQA));
+  // Phase 3: seven adjustment controls must persist, validate and render safely.
+  const adjustmentQA=await page.evaluate(()=>{
+    const specs={saturation:[0,200,100],grayscale:[0,100,0],sepia:[0,100,0],hue:[0,360,0],blur:[0,20,0],invert:[0,100,0],warmth:[0,100,0]};
+    const l=active(),original=capture(),results={};
+    for(const [name,[min,max,neutral]] of Object.entries(specs)){
+      const input=document.getElementById(name),label=document.getElementById(name+'val');
+      const before=l[name],sample=Math.min(max,Math.max(min,neutral+1));
+      input.value=String(sample);input.dispatchEvent(new Event('input',{bubbles:true}));
+      const changed=l[name]===sample,shown=label.textContent.includes(String(sample));
+      const saved=capture(),persisted=saved.layers.find(v=>v.id===l.id)?.[name]===sample;
+      const validated=validateDocument(saved).layers.find(v=>v.id===l.id)?.[name]===sample;
+      l[name]=before;input.value=String(before??neutral);label.textContent=String(before??neutral)+(name==='hue'?'°':name==='blur'?'px':'%');
+      results[name]=!!input&&changed&&shown&&persisted&&validated;
+    }
+    render();return results;
+  });
+  for(const [name,ok] of Object.entries(adjustmentQA))if(!ok)throw Error('Phase 3 adjustment regression '+name+': '+JSON.stringify(adjustmentQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
