@@ -120,6 +120,7 @@ try{
   });
   if(transformCheck.error||!transformCheck.sameLayer||transformCheck.kind!==transformCheck.expectedKind||transformCheck.rotation!==transformCheck.expectedRotation||transformCheck.flip!==transformCheck.expectedFlip)throw Error('Non-destructive vector transform regression: '+JSON.stringify(transformCheck));
   // Phase 2 final QA: rotated corner hit testing and pointer resizing.
+  await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
     const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
