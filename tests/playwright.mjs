@@ -6,7 +6,16 @@ if(!browserType)throw Error('Unknown browser '+engine);
 const server=spawn('python3',['-m','http.server','8765'],{stdio:'ignore'});
 const browser=await browserType.launch({headless:true});
 try{
- await new Promise(resolve=>setTimeout(resolve,1200));
+ // Wait for the local editor server to respond instead of relying on a fixed sleep.
+ let ready=false;
+ for(let attempt=0;attempt<40;attempt++){
+  try{
+   const response=await fetch('http://127.0.0.1:8765/index.html');
+   if(response.ok){ready=true;break}
+  }catch{}
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ if(!ready)throw Error('Editor HTTP server did not become ready on port 8765');
  for(const mobile of [false,true]){
   const context=await browser.newContext(mobile?(engine==='firefox'?{viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true}: {...devices['iPhone 13'],browserName:undefined}):{viewport:{width:1440,height:900}});
   const page=await context.newPage();
