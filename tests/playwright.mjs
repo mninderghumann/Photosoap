@@ -333,6 +333,18 @@ try{
     const after=await page.evaluate(()=>groupBounds(active().groupId));
     if(Math.abs(after.x-before.x)>1||Math.abs(after.y-before.y)>1)throw Error('Shift group resize anchor drift: '+JSON.stringify({before,after}));
   }
+  // Phase 2 batch of four: validate grouped geometry after repeated pointer transforms.
+  const groupIntegrity=await page.evaluate(()=>{
+    const id=active().groupId,items=layers.filter(l=>l.groupId===id);
+    return {count:items.length,allEditable:items.every(l=>!!(l.shapeData||l.elementData)),
+      allFinite:items.every(l=>{const d=l.shapeData||l.elementData;return [d.x,d.y,d.w,d.h].every(Number.isFinite)}),
+      positive:items.every(l=>{const d=l.shapeData||l.elementData;return d.w>=1&&d.h>=1}),
+      bounded:items.every(l=>{const d=l.shapeData||l.elementData;return d.w<=12000&&d.h<=12000&&Math.abs(d.x)<=12000&&Math.abs(d.y)<=12000})};
+  });
+  if(groupIntegrity.count<2)throw Error('Group membership lost during resizing: '+JSON.stringify(groupIntegrity));
+  if(!groupIntegrity.allEditable)throw Error('Group vector metadata lost during resizing: '+JSON.stringify(groupIntegrity));
+  if(!groupIntegrity.allFinite||!groupIntegrity.positive)throw Error('Group resize produced invalid dimensions: '+JSON.stringify(groupIntegrity));
+  if(!groupIntegrity.bounded)throw Error('Group resize exceeded safe geometry limits: '+JSON.stringify(groupIntegrity));
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
