@@ -441,6 +441,22 @@ try{
     return {checks,unchanged:JSON.stringify(current)===JSON.stringify(window.eval('layers').map(l=>l.id))};
   });
   if(!schema.unchanged||Object.values(schema.checks).some(ok=>!ok))throw Error('Document validation regression: '+JSON.stringify(schema));
+  // Phase 2 acceptance: five pointer-state and cursor invariants.
+  const interactionQA=await page.evaluate(()=>{
+    const c=document.querySelector('#canvas');
+    const before={group:groupResize,object:objectResize,move:objectMove,drag,cursor:c.style.cursor};
+    c.dispatchEvent(new PointerEvent('pointercancel',{bubbles:true,pointerId:91}));
+    const cancel={group:groupResize===null,object:objectResize===null,move:objectMove===null,drag:drag===false,cursor:c.style.cursor==='crosshair'};
+    c.style.cursor='move';
+    c.dispatchEvent(new PointerEvent('pointerleave',{bubbles:false,pointerId:92}));
+    const leave=c.style.cursor==='crosshair';
+    return {cancel,leave,before};
+  });
+  if(!interactionQA.cancel.group)throw Error('Pointer cancellation left group resize active: '+JSON.stringify(interactionQA));
+  if(!interactionQA.cancel.object)throw Error('Pointer cancellation left object resize active: '+JSON.stringify(interactionQA));
+  if(!interactionQA.cancel.move||!interactionQA.cancel.drag)throw Error('Pointer cancellation left move or drag active: '+JSON.stringify(interactionQA));
+  if(!interactionQA.cancel.cursor)throw Error('Pointer cancellation did not reset cursor: '+JSON.stringify(interactionQA));
+  if(!interactionQA.leave)throw Error('Pointer leave did not reset idle cursor: '+JSON.stringify(interactionQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
