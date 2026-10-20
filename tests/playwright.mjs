@@ -132,7 +132,7 @@ try{
     const point=(x,y)=>screen(cx+(x-cx)*Math.cos(a)-(y-cy)*Math.sin(a),cy+(x-cx)*Math.sin(a)+(y-cy)*Math.cos(a));
     const handle=point(rotated.x+rotated.w,rotated.y+rotated.h);
     await page.mouse.move(handle.x,handle.y);await page.mouse.down();
-    const state=await page.evaluate(({x,y})=>({corner:objectResize?.corner,drag,tool,panMode,selected:active()?.id,locked:active()?.locked,hit:document.elementFromPoint(x,y)?.id,canvasRect:canvas.getBoundingClientRect().toJSON(),scrollY:window.scrollY}),handle);
+    const state=await page.evaluate(({x,y})=>({corner:objectResize?.corner,drag,tool,panMode,selected:active()?.id,locked:active()?.locked,hit:document.elementFromPoint(x,y)?.id,hitTag:document.elementFromPoint(x,y)?.tagName,hitClass:document.elementFromPoint(x,y)?.className,handle:{x,y},canvasRect:canvas.getBoundingClientRect().toJSON(),stageRect:canvas.parentElement.getBoundingClientRect().toJSON(),stageScroll:{x:canvas.parentElement.scrollLeft,y:canvas.parentElement.scrollTop},canvasSize:{w:canvas.width,h:canvas.height},scrollY:window.scrollY}),handle);
     await page.mouse.move(handle.x+20,handle.y+20,{steps:5});await page.mouse.up();
     const resized=await page.evaluate(()=>{const d=active().shapeData;return {w:d.w,h:d.h}});
     if(state.corner!=='se'||!state.drag||Math.abs(resized.w-rotated.w)<0.1&&Math.abs(resized.h-rotated.h)<0.1)throw Error('Rotated corner pointer regression: '+JSON.stringify({state,rotated,resized}));
