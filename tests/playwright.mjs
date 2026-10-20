@@ -558,12 +558,12 @@ try{
         const supported=p.globalCompositeOperation===modes[i];
         p.fillStyle='rgb(200,80,40)';p.fillRect(0,0,1,1);
         const pixel=[...p.getImageData(0,0,1,1).data];
-        results.push({mode:modes[i],accepted:accepted.version===2&&saved.layers.some(l=>l.id===layer.id&&l.blendMode===i),supported,pixelValid:pixel.every(Number.isFinite)&&pixel[3]===255,uiRange:document.getElementById('blendMode').max==='15'});
+        results.push({mode:modes[i],accepted:accepted.version===2&&saved.layers.some(l=>l.id===layer.id&&l.blendMode===i),supported,pixelValid:pixel.every(Number.isFinite)&&pixel[3]===255,composited:pixel.slice(0,3).some((v,j)=>v!==[60,120,180][j]),uiRange:document.getElementById('blendMode').max==='15'});
       }
     }finally{layer.blendMode=original;render(false)}
     return results;
   });
-  if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.supported||!v.pixelValid||!v.uiRange))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
+  if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.supported||!v.pixelValid||!v.composited||!v.uiRange))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
