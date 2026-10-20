@@ -119,6 +119,41 @@ try{
     return {sameLayer:updated.id===id,kind:shape?.kind,expectedKind:kind,rotation:shape?.rotation,expectedRotation:(originalRotation+90)%360,flip:shape?.flipH,expectedFlip:!originalFlip};
   });
   if(transformCheck.error||!transformCheck.sameLayer||transformCheck.kind!==transformCheck.expectedKind||transformCheck.rotation!==transformCheck.expectedRotation||transformCheck.flip!==transformCheck.expectedFlip)throw Error('Non-destructive vector transform regression: '+JSON.stringify(transformCheck));
+  // Phase 2 final QA: rotated corner hit testing and pointer resizing.
+  if(!mobile){
+    const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const screen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
+    const cx=rotated.x+rotated.w/2,cy=rotated.y+rotated.h/2,a=rotated.rotation*Math.PI/180;
+    const point=(x,y)=>screen(cx+(x-cx)*Math.cos(a)-(y-cy)*Math.sin(a),cy+(x-cx)*Math.sin(a)+(y-cy)*Math.cos(a));
+    const handle=point(rotated.x+rotated.w,rotated.y+rotated.h);
+    await page.mouse.move(handle.x,handle.y);await page.mouse.down();
+    const state=await page.evaluate(()=>({corner:objectResize?.corner,drag}));
+    await page.mouse.move(handle.x+20,handle.y+20,{steps:5});await page.mouse.up();
+    const resized=await page.evaluate(()=>{const d=active().shapeData;return {w:d.w,h:d.h}});
+    if(state.corner!=='se'||!state.drag||Math.abs(resized.w-rotated.w)<0.1&&Math.abs(resized.h-rotated.h)<0.1)throw Error('Rotated corner pointer regression: '+JSON.stringify({state,rotated,resized}));
+    // Shift resizing must preserve the initial aspect ratio.
+    const before=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
+    const c2x=before.x+before.w/2,c2y=before.y+before.h/2,rad=before.rotation*Math.PI/180;
+    const corner=screen(c2x+(before.w/2)*Math.cos(rad)-(before.h/2)*Math.sin(rad),c2y+(before.w/2)*Math.sin(rad)+(before.h/2)*Math.cos(rad));
+    await page.keyboard.down('Shift');await page.mouse.move(corner.x,corner.y);await page.mouse.down();
+    const shiftState=await page.evaluate(()=>objectResize?.corner);
+    await page.mouse.move(corner.x+30,corner.y+15,{steps:5});await page.mouse.up();await page.keyboard.up('Shift');
+    const after=await page.evaluate(()=>{const d=active().shapeData;return {w:d.w,h:d.h}});
+    if(shiftState!=='se'||Math.abs(after.w/before.w-after.h/before.h)>0.002)throw Error('Shift rotated resize aspect regression: '+JSON.stringify({shiftState,before,after}));
+    // Pointer cancellation must clear the individual resize interaction.
+    const latest=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
+    const ccx=latest.x+latest.w/2,ccy=latest.y+latest.h/2,ra=latest.rotation*Math.PI/180;
+    const h=screen(ccx+(latest.w/2)*Math.cos(ra)-(latest.h/2)*Math.sin(ra),ccy+(latest.w/2)*Math.sin(ra)+(latest.h/2)*Math.cos(ra));
+    await page.mouse.move(h.x,h.y);await page.mouse.down();
+    const captured=await page.evaluate(()=>!!objectResize);
+    await canvas.dispatchEvent('pointercancel');const cleared=await page.evaluate(()=>!objectResize&&!drag);
+    await page.mouse.up();
+    if(!captured||!cleared)throw Error('Individual resize cancellation regression: '+JSON.stringify({captured,cleared}));
+    // Rotation metadata must remain intact after pointer edits.
+    const finalRotation=await page.evaluate(()=>active().shapeData.rotation);
+    if(finalRotation!==rotated.rotation)throw Error('Pointer resize changed rotation metadata');
+  }
   const transformedLayerId=await page.evaluate(()=>active().id);
   // Recovery must preserve an existing session across reloads.
   await page.evaluate(()=>{window.confirm=()=>true;document.getElementById('rectangle').click()});
