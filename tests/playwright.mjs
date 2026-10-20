@@ -242,6 +242,19 @@ try{
     const afterDrag=await page.evaluate(()=>{const id=active().groupId;return layers.filter(l=>l.groupId===id).map(l=>({id:l.id,w:(l.shapeData||l.elementData).w,h:(l.shapeData||l.elementData).h}))});
     if(afterDrag.length!==beforeDrag.length||afterDrag.some((v,i)=>v.w<=beforeDrag[i].w||v.h<=beforeDrag[i].h))throw Error('Group corner-handle resize regression: '+JSON.stringify({beforeDrag,afterDrag,hitState,bounds,handle,target,box,size}));
   }
+  // Shift-drag must constrain group corner resizing to a uniform scale.
+  if(!mobile){
+    const before=await page.evaluate(()=>{const l=active(),g=groupBounds(l.groupId);return {g,members:layers.filter(v=>v.groupId===l.groupId).map(v=>({id:v.id,w:(v.shapeData||v.elementData).w,h:(v.shapeData||v.elementData).h}))}});
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const screen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
+    const from=screen(before.g.x+before.g.w,before.g.y+before.g.h),to=screen(before.g.x+before.g.w+35,before.g.y+before.g.h+12);
+    await page.keyboard.down('Shift');
+    await page.mouse.move(from.x,from.y);await page.mouse.down();
+    await page.mouse.move(to.x,to.y,{steps:5});await page.mouse.up();
+    await page.keyboard.up('Shift');
+    const after=await page.evaluate(()=>{const id=active().groupId;return layers.filter(v=>v.groupId===id).map(v=>({id:v.id,w:(v.shapeData||v.elementData).w,h:(v.shapeData||v.elementData).h}))});
+    if(after.length!==before.members.length||after.some((v,i)=>Math.abs(v.w/before.members[i].w-v.h/before.members[i].h)>0.001||v.w<=before.members[i].w))throw Error('Shift-constrained group resize regression: '+JSON.stringify({before,after}));
+  }
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
