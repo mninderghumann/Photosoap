@@ -530,6 +530,14 @@ try{
     return {signature,mime:url.startsWith('data:image/png;base64,'),width:view.getUint32(16)===output.width,height:view.getUint32(20)===output.height};
   });
   if(Object.values(pngQA).some(v=>v!==true))throw Error('Phase 3 PNG export regression: '+JSON.stringify(pngQA));
+  // Verify the user-facing PNG export action, not just canvas encoding.
+  const pngDownload=page.waitForEvent('download');
+  await page.locator('#save').click();
+  const download=await pngDownload;
+  const filename=download.suggestedFilename();
+  if(!filename.toLowerCase().endsWith('.png'))throw Error('PNG export download filename invalid: '+filename);
+  const exportFailure=await download.failure();
+  if(exportFailure)throw Error('PNG export download failed: '+exportFailure);
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
