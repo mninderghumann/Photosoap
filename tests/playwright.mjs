@@ -510,6 +510,17 @@ try{
     return {unchanged:JSON.stringify(before)===JSON.stringify(after),persisted:saved?.feather===20,validated:normalized?.feather===20,originalValid:validateDocument(original).version===2};
   });
   if(Object.values(featherQA).some(v=>v!==true))throw Error('Phase 3 feather isolation/persistence regression: '+JSON.stringify(featherQA));
+  // Phase 3: PNG export must encode the rendered document dimensions.
+  const pngQA=await page.evaluate(()=>{
+    const output=document.getElementById('canvas');
+    const url=output.toDataURL('image/png');
+    const raw=atob(url.split(',')[1]);
+    const bytes=Uint8Array.from(raw.slice(0,24),ch=>ch.charCodeAt(0));
+    const signature=[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
+    const view=new DataView(bytes.buffer);
+    return {signature,mime:url.startsWith('data:image/png;base64,'),width:view.getUint32(16)===output.width,height:view.getUint32(20)===output.height};
+  });
+  if(Object.values(pngQA).some(v=>v!==true))throw Error('Phase 3 PNG export regression: '+JSON.stringify(pngQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
