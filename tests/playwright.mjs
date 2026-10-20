@@ -457,6 +457,24 @@ try{
   if(!interactionQA.cancel.move||!interactionQA.cancel.drag)throw Error('Pointer cancellation left move or drag active: '+JSON.stringify(interactionQA));
   if(!interactionQA.cancel.cursor)throw Error('Pointer cancellation did not reset cursor: '+JSON.stringify(interactionQA));
   if(!interactionQA.leave)throw Error('Pointer leave did not reset idle cursor: '+JSON.stringify(interactionQA));
+  // Phase 2 final acceptance: five UI state and interaction checks.
+  const finalQA=await page.evaluate(()=>{
+    const c=document.querySelector('#canvas'),l=active();
+    const previous=tool;
+    tool='move';c.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:201,clientX:0,clientY:0}));
+    const moveCursor=c.style.cursor==='move';
+    tool='select';panMode=true;c.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:202,clientX:0,clientY:0}));
+    const panCursor=c.style.cursor==='grab';
+    panMode=false;
+    c.style.cursor='move';c.dispatchEvent(new PointerEvent('pointerleave',{pointerId:203}));
+    const leaveCursor=c.style.cursor==='crosshair';
+    c.dispatchEvent(new PointerEvent('pointercancel',{pointerId:204}));
+    const cancelClears=!drag&&!groupResize&&!objectResize&&!objectMove;
+    const hiddenGuard=!!l&&typeof l.visible==='boolean';
+    tool=previous;
+    return {moveCursor,panCursor,leaveCursor,cancelClears,hiddenGuard};
+  });
+  for(const [name,ok] of Object.entries(finalQA))if(!ok)throw Error('Phase 2 final acceptance '+name+': '+JSON.stringify(finalQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
