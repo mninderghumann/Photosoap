@@ -492,6 +492,24 @@ try{
     l.locked=wasLocked;refresh();return results;
   });
   for(const [name,ok] of Object.entries(adjustmentQA))if(!ok.ok)throw Error('Phase 3 adjustment regression '+name+': '+JSON.stringify(adjustmentQA));
+  // Phase 3 release gate: feather must not modify lower-layer source pixels.
+  const featherQA=await page.evaluate(()=>{
+    const original=capture();
+    const top=active();
+    if(!top)return {error:'No active layer'};
+    const source=top.canvas.getContext('2d').getImageData(0,0,Math.min(4,top.canvas.width),Math.min(4,top.canvas.height)).data;
+    const before=Array.from(source);
+    const previous=top.feather??0;
+    top.feather=20;
+    refresh();
+    const serialized=capture();
+    const saved=serialized.layers.find(l=>l.id===top.id);
+    const normalized=validateDocument(serialized).layers.find(l=>l.id===top.id);
+    const after=Array.from(top.canvas.getContext('2d').getImageData(0,0,Math.min(4,top.canvas.width),Math.min(4,top.canvas.height)).data);
+    top.feather=previous;refresh();
+    return {unchanged:JSON.stringify(before)===JSON.stringify(after),persisted:saved?.feather===20,validated:normalized?.feather===20,originalValid:validateDocument(original).version===2};
+  });
+  if(Object.values(featherQA).some(v=>v!==true))throw Error('Phase 3 feather isolation/persistence regression: '+JSON.stringify(featherQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
