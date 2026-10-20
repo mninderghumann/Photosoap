@@ -487,11 +487,11 @@ try{
       const saved=capture(),persisted=saved.layers.find(v=>v.id===l.id)?.[name]===sample;
       const validated=validateDocument(saved).layers.find(v=>v.id===l.id)?.[name]===sample;
       l[name]=before;input.value=String(before??neutral);label.textContent=String(before??neutral)+(name==='hue'?'°':name==='blur'?'px':'%');
-      results[name]=!!input&&changed&&shown&&persisted&&validated;
+      results[name]={ok:!!input&&changed&&shown&&persisted&&validated,changed,shown,persisted,validated,locked:l.locked,selected:active()?.id,layer:l.id,value:l[name],sample};
     }
     l.locked=wasLocked;refresh();return results;
   });
-  for(const [name,ok] of Object.entries(adjustmentQA))if(!ok)throw Error('Phase 3 adjustment regression '+name+': '+JSON.stringify(adjustmentQA));
+  for(const [name,ok] of Object.entries(adjustmentQA))if(!ok.ok)throw Error('Phase 3 adjustment regression '+name+': '+JSON.stringify(adjustmentQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
