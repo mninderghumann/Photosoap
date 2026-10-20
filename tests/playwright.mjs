@@ -255,6 +255,43 @@ try{
     const after=await page.evaluate(()=>{const id=active().groupId;return layers.filter(v=>v.groupId===id).map(v=>({id:v.id,w:(v.shapeData||v.elementData).w,h:(v.shapeData||v.elementData).h}))});
     if(after.length!==before.members.length||after.some((v,i)=>Math.abs(v.w/before.members[i].w-v.h/before.members[i].h)>0.001||v.w<=before.members[i].w))throw Error('Shift-constrained group resize regression: '+JSON.stringify({before,after}));
   }
+  // Batch regression 1: pointer cancellation must clear group resize state.
+  if(!mobile){
+    const g=await page.evaluate(()=>groupBounds(active().groupId));
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const x=box.x+(g.x+g.w)*box.width/size.w,y=box.y+(g.y+g.h)*box.height/size.h;
+    await page.mouse.move(x,y);await page.mouse.down();
+    const started=await page.evaluate(()=>!!groupResize);
+    await canvas.dispatchEvent('pointercancel');
+    const cleared=await page.evaluate(()=>!groupResize&&!drag);
+    await page.mouse.up();
+    if(!started||!cleared)throw Error('Group resize pointer cancellation regression: '+JSON.stringify({started,cleared}));
+  }
+  // Batch regression 2: grid snapping rounds a dragged group corner to grid coordinates.
+  if(!mobile){
+    await page.locator('#gridsize').fill('25');
+    await page.locator('#snapgrid').check();
+    const g=await page.evaluate(()=>groupBounds(active().groupId));
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const pt=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
+    const from=pt(g.x+g.w,g.y+g.h),to=pt(g.x+g.w+37,g.y+g.h+42);
+    await page.mouse.move(from.x,from.y);await page.mouse.down();
+    await page.mouse.move(to.x,to.y,{steps:5});await page.mouse.up();
+    const updated=await page.evaluate(()=>groupBounds(active().groupId));
+    if(Math.abs(updated.x+updated.w-Math.round((g.x+g.w+37)/25)*25)>1||Math.abs(updated.y+updated.h-Math.round((g.y+g.h+42)/25)*25)>1)throw Error('Group corner grid snapping regression: '+JSON.stringify({g,updated}));
+    await page.locator('#snapgrid').uncheck();
+  }
+  // Batch regression 3: Shift-resizing keeps the opposite group corner anchored.
+  if(!mobile){
+    const before=await page.evaluate(()=>groupBounds(active().groupId));
+    const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
+    const pt=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
+    const from=pt(before.x+before.w,before.y+before.h),to=pt(before.x+before.w+22,before.y+before.h+49);
+    await page.keyboard.down('Shift');await page.mouse.move(from.x,from.y);await page.mouse.down();
+    await page.mouse.move(to.x,to.y,{steps:5});await page.mouse.up();await page.keyboard.up('Shift');
+    const after=await page.evaluate(()=>groupBounds(active().groupId));
+    if(Math.abs(after.x-before.x)>1||Math.abs(after.y-before.y)>1)throw Error('Shift group resize anchor drift: '+JSON.stringify({before,after}));
+  }
   // Grid snapping applies only when enabled; exact numeric positions otherwise remain unchanged.
   await page.locator('#gridsize').fill('50');
   await page.locator('#snapgrid').check();
