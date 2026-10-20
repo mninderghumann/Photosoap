@@ -497,17 +497,16 @@ try{
     const original=capture();
     const top=active();
     if(!top)return {error:'No active layer'};
-    const source=top.canvas.getContext('2d').getImageData(0,0,Math.min(4,top.canvas.width),Math.min(4,top.canvas.height)).data;
-    const before=Array.from(source);
+    const snapshots=layers.map(l=>({id:l.id,pixels:Array.from(l.canvas.getContext('2d').getImageData(0,0,Math.min(4,l.canvas.width),Math.min(4,l.canvas.height)).data)}));
     const previous=top.feather??0;
     top.feather=20;
     refresh();
     const serialized=capture();
     const saved=serialized.layers.find(l=>l.id===top.id);
     const normalized=validateDocument(serialized).layers.find(l=>l.id===top.id);
-    const after=Array.from(top.canvas.getContext('2d').getImageData(0,0,Math.min(4,top.canvas.width),Math.min(4,top.canvas.height)).data);
+    const unchanged=snapshots.every(before=>{const l=layers.find(item=>item.id===before.id);return !!l&&JSON.stringify(before.pixels)===JSON.stringify(Array.from(l.canvas.getContext('2d').getImageData(0,0,Math.min(4,l.canvas.width),Math.min(4,l.canvas.height)).data))});
     top.feather=previous;refresh();
-    return {unchanged:JSON.stringify(before)===JSON.stringify(after),persisted:saved?.feather===20,validated:normalized?.feather===20,originalValid:validateDocument(original).version===2};
+    return {unchanged,persisted:saved?.feather===20,validated:normalized?.feather===20,originalValid:validateDocument(original).version===2};
   });
   if(Object.values(featherQA).some(v=>v!==true))throw Error('Phase 3 feather isolation/persistence regression: '+JSON.stringify(featherQA));
   // Phase 3: PNG export must encode the rendered document dimensions.
