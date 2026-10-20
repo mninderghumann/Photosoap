@@ -105,6 +105,8 @@ try{
     if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed');
   }
   // Vector rotation and flip must preserve editable metadata and undo history.
+  // Keep rotated handles within the canvas: previous fixture extended beyond its bottom edge.
+  await page.evaluate(()=>{const l=active(),d=l.shapeData;d.w=Math.min(d.w,120);d.h=Math.min(d.h,90);d.x=Math.round((canvas.width-d.w)/2)-l.x;d.y=Math.round((canvas.height-d.h)/2)-l.y;drawShapeLayer(l);refresh()});
   const transformCheck=await page.evaluate(()=>{
     const l=active(),d=l.shapeData;
     if(!d)return {error:'Missing editable shape'};
