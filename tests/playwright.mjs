@@ -551,12 +551,19 @@ try{
         render(false);
         const saved=capture();
         const accepted=validateDocument(saved);
-        results.push({mode:modes[i],accepted:accepted.version===2&&saved.layers.some(l=>l.id===layer.id&&l.blendMode===i),rendered:ctx.globalCompositeOperation==='source-over'});
+        const probe=document.createElement('canvas');probe.width=probe.height=1;
+        const p=probe.getContext('2d');
+        p.fillStyle='rgb(60,120,180)';p.fillRect(0,0,1,1);
+        p.globalCompositeOperation=modes[i];
+        const supported=p.globalCompositeOperation===modes[i];
+        p.fillStyle='rgb(200,80,40)';p.fillRect(0,0,1,1);
+        const pixel=[...p.getImageData(0,0,1,1).data];
+        results.push({mode:modes[i],accepted:accepted.version===2&&saved.layers.some(l=>l.id===layer.id&&l.blendMode===i),supported,pixelValid:pixel.every(Number.isFinite)&&pixel[3]===255,uiRange:document.getElementById('blendMode').max==='15'});
       }
     }finally{layer.blendMode=original;render(false)}
     return results;
   });
-  if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.rendered))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
+  if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.supported||!v.pixelValid||!v.uiRange))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
