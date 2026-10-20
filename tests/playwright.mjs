@@ -4,7 +4,7 @@ const engine=process.argv[2]||'chromium';
 const browserType={chromium,firefox,webkit}[engine];
 if(!browserType)throw Error('Unknown browser '+engine);
 const server=spawn('python3',['-m','http.server','8765'],{stdio:'ignore'});
-const browser=await browserType.launch({headless:true});
+let browser;
 try{
  // Wait for the local editor server to respond instead of relying on a fixed sleep.
  let ready=false;
@@ -16,6 +16,7 @@ try{
   await new Promise(resolve=>setTimeout(resolve,250));
  }
  if(!ready)throw Error('Editor HTTP server did not become ready on port 8765');
+ browser=await browserType.launch({headless:true});
  for(const mobile of [false,true]){
   const context=await browser.newContext(mobile?(engine==='firefox'?{viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true}: {...devices['iPhone 13'],browserName:undefined}):{viewport:{width:1440,height:900}});
   const page=await context.newPage();
@@ -533,4 +534,4 @@ try{
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
  }
-}finally{await browser.close();server.kill()}
+}finally{if(browser)await browser.close();server.kill()}
