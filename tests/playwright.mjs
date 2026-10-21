@@ -614,6 +614,19 @@ try{
     }finally{l.locked=locked;l.blendMode=old;refresh()}
   });
   if(!keyboardQA.end||!keyboardQA.home||!keyboardQA.lockedPreserved)throw Error('Blend keyboard regression: '+JSON.stringify(keyboardQA));
+  const maskToggleQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.opacityMaskEnabled,locked=l.locked;
+    try{
+      l.locked=false;l.opacityMaskEnabled=true;refresh();
+      document.getElementById('toggleOpacityMask').click();
+      const disabled=l.opacityMaskEnabled===false&&document.getElementById('toggleOpacityMask').getAttribute('aria-pressed')==='false';
+      const persisted=capture().layers.find(x=>x.id===l.id).opacityMaskEnabled===false;
+      l.locked=true;document.getElementById('toggleOpacityMask').click();
+      return {disabled,persisted,lockedPreserved:l.opacityMaskEnabled===false};
+    }finally{l.locked=locked;l.opacityMaskEnabled=old;refresh()}
+  });
+  if(!maskToggleQA.disabled||!maskToggleQA.persisted||!maskToggleQA.lockedPreserved)throw Error('Mask toggle regression: '+JSON.stringify(maskToggleQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
