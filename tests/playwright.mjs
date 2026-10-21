@@ -1,5 +1,6 @@
 import { chromium, firefox, webkit, devices } from 'playwright';
 import { spawn } from 'node:child_process';
+import { createConnection } from 'node:net';
 const engine=process.argv[2]||'chromium';
 const browserType={chromium,firefox,webkit}[engine];
 if(!browserType)throw Error('Unknown browser '+engine);
@@ -10,8 +11,13 @@ try{
  let ready=false;
  for(let attempt=0;attempt<40;attempt++){
   try{
-   const response=await fetch('http://127.0.0.1:8765/index.html');
-   if(response.ok){ready=true;break}
+   await new Promise((resolve,reject)=>{
+    const socket=createConnection({host:'127.0.0.1',port:8765});
+    socket.once('connect',()=>{socket.destroy();resolve()});
+    socket.once('error',reject);
+    socket.setTimeout(1000,()=>socket.destroy(new Error('Readiness timeout')));
+   });
+   ready=true;break
   }catch{}
   await new Promise(resolve=>setTimeout(resolve,250));
  }
@@ -564,6 +570,19 @@ try{
     return results;
   });
   if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.supported||!v.pixelValid||!v.composited||!v.uiRange||!v.label))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
+  const resetQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.blendMode,oldLocked=l.locked;
+    try{
+      l.locked=false;l.blendMode=2;refresh();
+      document.getElementById('resetBlendMode').click();
+      const reset=l.blendMode===0;
+      l.blendMode=3;l.locked=true;refresh();
+      document.getElementById('resetBlendMode').click();
+      return {reset,lockedPreserved:l.blendMode===3};
+    }finally{l.locked=oldLocked;l.blendMode=old;refresh()}
+  });
+  if(!resetQA.reset||!resetQA.lockedPreserved)throw Error('Blend reset regression: '+JSON.stringify(resetQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
