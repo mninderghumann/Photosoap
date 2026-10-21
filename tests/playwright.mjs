@@ -598,6 +598,22 @@ try{
     }finally{l.locked=locked;l.blendMode=old;refresh()}
   });
   if(selectorQA.count!==16||!selectorQA.selected||!selectorQA.lockedPreserved)throw Error('Blend selector regression: '+JSON.stringify(selectorQA));
+  const keyboardQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.blendMode,locked=l.locked;
+    try{
+      l.locked=false;l.blendMode=4;refresh();
+      const el=document.getElementById('blendModeSelect');
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
+      const end=l.blendMode===15;
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));
+      const home=l.blendMode===0;
+      l.locked=true;l.blendMode=5;refresh();
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));
+      return {end,home,lockedPreserved:l.blendMode===5};
+    }finally{l.locked=locked;l.blendMode=old;refresh()}
+  });
+  if(!keyboardQA.end||!keyboardQA.home||!keyboardQA.lockedPreserved)throw Error('Blend keyboard regression: '+JSON.stringify(keyboardQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
