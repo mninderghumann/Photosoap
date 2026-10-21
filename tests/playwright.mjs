@@ -641,6 +641,21 @@ try{
     }finally{l.opacityMask=old;l.opacityMaskEnabled=oldEnabled;l.locked=locked;refresh()}
   });
   if(!maskResetQA.cleared||!maskResetQA.persisted||!maskResetQA.lockedPreserved)throw Error('Mask reset regression: '+JSON.stringify(maskResetQA));
+  const selectionMaskQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const previous=l.selectionMask,locked=l.locked,previousSelection=selection;
+    try{
+      l.locked=false;selection={x:l.x+12,y:l.y+15,w:40,h:35};refresh();
+      document.getElementById('maskFromSelection').click();
+      const created=!!l.selectionMask&&l.selectionMask.w===40&&l.selectionMask.h===35;
+      const persisted=!!capture().layers.find(x=>x.id===l.id).selectionMask;
+      l.locked=true;document.getElementById('removeSelectionMask').click();
+      const protectedLayer=!!l.selectionMask;
+      l.locked=false;document.getElementById('removeSelectionMask').click();
+      return {created,persisted,protectedLayer,removed:!l.selectionMask};
+    }finally{l.selectionMask=previous;l.locked=locked;selection=previousSelection;refresh()}
+  });
+  if(Object.values(selectionMaskQA).some(v=>v!==true))throw Error('Selection mask regression: '+JSON.stringify(selectionMaskQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
