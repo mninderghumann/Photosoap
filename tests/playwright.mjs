@@ -583,6 +583,21 @@ try{
     }finally{l.locked=oldLocked;l.blendMode=old;refresh()}
   });
   if(!resetQA.reset||!resetQA.lockedPreserved)throw Error('Blend reset regression: '+JSON.stringify(resetQA));
+  const selectorQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.blendMode,locked=l.locked;
+    try{
+      l.locked=false;refresh();
+      const el=document.getElementById('blendModeSelect');
+      const count=el.options.length;
+      el.value='9';el.dispatchEvent(new Event('change',{bubbles:true}));
+      const selected=l.blendMode===9&&document.getElementById('blendMode').value==='9';
+      l.locked=true;refresh();
+      el.value='4';el.dispatchEvent(new Event('change',{bubbles:true}));
+      return {count,selected,lockedPreserved:l.blendMode===9};
+    }finally{l.locked=locked;l.blendMode=old;refresh()}
+  });
+  if(selectorQA.count!==16||!selectorQA.selected||!selectorQA.lockedPreserved)throw Error('Blend selector regression: '+JSON.stringify(selectorQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
