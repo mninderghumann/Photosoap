@@ -1,5 +1,6 @@
 import { chromium, firefox, webkit, devices } from 'playwright';
 import { spawn } from 'node:child_process';
+import { createConnection } from 'node:net';
 const engine=process.argv[2]||'chromium';
 const browserType={chromium,firefox,webkit}[engine];
 if(!browserType)throw Error('Unknown browser '+engine);
@@ -10,8 +11,13 @@ try{
  let ready=false;
  for(let attempt=0;attempt<40;attempt++){
   try{
-   const response=await fetch('http://127.0.0.1:8765/index.html');
-   if(response.ok){ready=true;break}
+   await new Promise((resolve,reject)=>{
+    const socket=createConnection({host:'127.0.0.1',port:8765});
+    socket.once('connect',()=>{socket.destroy();resolve()});
+    socket.once('error',reject);
+    socket.setTimeout(1000,()=>socket.destroy(new Error('Readiness timeout')));
+   });
+   ready=true;break
   }catch{}
   await new Promise(resolve=>setTimeout(resolve,250));
  }
