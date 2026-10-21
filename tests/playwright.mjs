@@ -627,6 +627,20 @@ try{
     }finally{l.locked=locked;l.opacityMaskEnabled=old;refresh()}
   });
   if(!maskToggleQA.disabled||!maskToggleQA.persisted||!maskToggleQA.lockedPreserved)throw Error('Mask toggle regression: '+JSON.stringify(maskToggleQA));
+  const maskResetQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.opacityMask,oldEnabled=l.opacityMaskEnabled,locked=l.locked;
+    try{
+      l.locked=false;l.opacityMask=65;l.opacityMaskEnabled=false;refresh();
+      document.getElementById('resetOpacityMask').click();
+      const cleared=l.opacityMask===0&&l.opacityMaskEnabled===true;
+      const persisted=capture().layers.find(x=>x.id===l.id).opacityMask===0;
+      l.opacityMask=40;l.locked=true;refresh();
+      document.getElementById('resetOpacityMask').click();
+      return {cleared,persisted,lockedPreserved:l.opacityMask===40};
+    }finally{l.opacityMask=old;l.opacityMaskEnabled=oldEnabled;l.locked=locked;refresh()}
+  });
+  if(!maskResetQA.cleared||!maskResetQA.persisted||!maskResetQA.lockedPreserved)throw Error('Mask reset regression: '+JSON.stringify(maskResetQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
