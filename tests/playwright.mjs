@@ -564,6 +564,19 @@ try{
     return results;
   });
   if(!Array.isArray(blendQA)||blendQA.length!==16||blendQA.some(v=>!v.accepted||!v.supported||!v.pixelValid||!v.composited||!v.uiRange||!v.label))throw Error('Phase 4 blend mode regression: '+JSON.stringify(blendQA));
+  const resetQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.blendMode,oldLocked=l.locked;
+    try{
+      l.locked=false;l.blendMode=2;refresh();
+      document.getElementById('resetBlendMode').click();
+      const reset=l.blendMode===0;
+      l.blendMode=3;l.locked=true;refresh();
+      document.getElementById('resetBlendMode').click();
+      return {reset,lockedPreserved:l.blendMode===3};
+    }finally{l.locked=oldLocked;l.blendMode=old;refresh()}
+  });
+  if(!resetQA.reset||!resetQA.lockedPreserved)throw Error('Blend reset regression: '+JSON.stringify(resetQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
