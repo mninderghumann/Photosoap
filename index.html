@@ -63,7 +63,7 @@ function resizeSelectionMask(delta){const l=active();if(!l||l.locked||!l.selecti
 $('expandSelectionMask').onclick=()=>resizeSelectionMask(5);
 $('contractSelectionMask').onclick=()=>resizeSelectionMask(-5);
 $('copySelectionMask').onclick=()=>{const l=active(),i=layers.indexOf(l),target=layers[i+1];if(!l?.selectionMask||!target||target.locked)return;checkpoint();target.selectionMask={...l.selectionMask};refresh()};
-$('selectionMaskFeather').onpointerdown=()=>{if(active()?.selectionMask&&!active().locked)checkpoint()};
+$('selectionMaskFeather').onpointerdown=()=>{if(active()?.selectionMask&&!active().locked)checkpoint()};$('selectionMaskFeather').onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)&&active()?.selectionMask&&!active().locked)checkpoint()};
 $('selectionMaskFeather').oninput=()=>{const l=active();if(!l||l.locked||!l.selectionMask)return;l.selectionMask={...l.selectionMask,feather:Number($('selectionMaskFeather').value)};refresh()};
 $('invertSelectionMask').onclick=()=>{const l=active();if(!l||l.locked||!l.selectionMask)return;checkpoint();l.selectionMask={...l.selectionMask,inverted:!l.selectionMask.inverted};refresh()};
 $('removeSelectionMask').onclick=()=>{const l=active();if(!l||l.locked||!l.selectionMask)return;checkpoint();delete l.selectionMask;refresh()};
