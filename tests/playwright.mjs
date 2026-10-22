@@ -707,6 +707,21 @@ try{
     }finally{l.selectionMask=old;l.locked=locked;refresh()}
   });
   if(Object.values(maskBatchQA).some(v=>v!==true))throw Error('Mask batch regression: '+JSON.stringify(maskBatchQA));
+  const clippingMaskQA=await page.evaluate(()=>{
+    const original=capture();
+    try{
+      const below=active();if(!below)return {error:'No layer'};
+      const top=layer('Clip QA');layers.push(top);selected=top.id;refresh();
+      document.getElementById('toggleClippingMask').click();
+      const enabled=top.clipToBelow===true;
+      const saved=capture().layers.find(x=>x.id===top.id).clipToBelow===true;
+      top.locked=true;document.getElementById('toggleClippingMask').click();
+      const locked=top.clipToBelow===true;
+      top.locked=false;document.getElementById('toggleClippingMask').click();
+      return {enabled,saved,locked,reversible:top.clipToBelow===false};
+    }finally{restore(original)}
+  });
+  if(Object.values(clippingMaskQA).some(v=>v!==true))throw Error('Clipping mask regression: '+JSON.stringify(clippingMaskQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
