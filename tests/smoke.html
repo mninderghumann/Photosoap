@@ -30,7 +30,9 @@ document.getElementById('app').onload=()=>{
  
 check(!!d.getElementById('maskBrushToggle'),'mask brush controls');d.getElementById('maskBrushToggle').click();check(app.eval('maskBrushEditing')===true,'mask editing enabled');check(typeof app.PhotosoapMaskBrush.paint==='function','mask brush module loaded');d.getElementById('maskBrushToggle').click();
  check(!!d.getElementById('selectionIntersect'),'selection intersection control');check(!!d.getElementById('selectionSave'),'save selection control');check(!!d.getElementById('selectionRestore'),'restore selection control');const selectionGeometry=app.PhotosoapSelectionGeometry;const selectionOverlap=selectionGeometry.intersect({x:0,y:0,w:20,h:20},{x:10,y:5,w:20,h:20});check(selectionOverlap.x===10&&selectionOverlap.y===5&&selectionOverlap.w===10&&selectionOverlap.h===15,'selection overlap geometry');d.getElementById('selectall').click();d.getElementById('selectionSave').click();d.getElementById('deselect').click();d.getElementById('selectionRestore').click();check(app.eval('selection.w')===1000,'saved selection restore');d.getElementById('deselect').click();
-out.textContent='PASS: editor smoke tests';
+check(!!d.getElementById('vectorAddCubic'),'vector curve creation control');const cubicMid=app.PhotosoapVectorPaths.cubic({x:0,y:0},{x:0,y:10},{x:10,y:10},{x:10,y:0},.5);check(Math.abs(cubicMid.x-5)<.001&&Math.abs(cubicMid.y-7.5)<.001,'cubic geometry');const layersBeforeVector=d.querySelectorAll('#layers li').length;d.getElementById('vectorAddCubic').click();check(d.querySelectorAll('#layers li').length===layersBeforeVector+1,'vector curve layer added');check(d.querySelector('#layers li.active').textContent.includes('Bézier'),'vector layer selected');
+check(app.PhotosoapVectorPaths.distance({x:0,y:0},{x:3,y:4})===5,'vector distance');check(app.PhotosoapVectorPaths.quadratic({x:0,y:0},{x:5,y:10},{x:10,y:0},.5).y===5,'quadratic midpoint');
+ out.textContent='PASS: editor smoke tests';
  }catch(e){out.textContent='FAIL: '+e.message}
  },350);
  }catch(e){out.textContent='FAIL: '+e.message}
