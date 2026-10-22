@@ -707,6 +707,20 @@ try{
     }finally{l.selectionMask=old;l.locked=locked;refresh()}
   });
   if(Object.values(maskBatchQA).some(v=>v!==true))throw Error('Mask batch regression: '+JSON.stringify(maskBatchQA));
+  const brushMaskQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'no active layer'};
+    const old=l.maskStrokes,locked=l.locked;
+    try{
+      l.locked=false;l.maskStrokes=[{x:12,y:12,size:20,erase:true}];refresh();
+      const saved=capture().layers.find(x=>x.id===l.id).maskStrokes.length===1;
+      const sourcePresent=!!l._maskedSource;
+      l.locked=true;document.getElementById('clearMaskBrush').click();
+      const lockedSafe=l.maskStrokes.length===1;
+      l.locked=false;document.getElementById('clearMaskBrush').click();
+      return {saved,sourcePresent,lockedSafe,cleared:l.maskStrokes.length===0};
+    }finally{l.maskStrokes=old;l.locked=locked;refresh()}
+  });
+  if(Object.values(brushMaskQA).some(v=>v!==true))throw Error('Brush mask regression: '+JSON.stringify(brushMaskQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
