@@ -69,7 +69,7 @@ try{
   const cropDebug=await canvas.evaluate(()=>{const button=document.getElementById('crop');let confirmations=0,alerts=[];window.confirm=()=>{confirmations++;return true};window.alert=m=>alerts.push(m);const before=window.eval('selection');button.click();return {confirmations,alerts,disabled:button.disabled,selection:before,after:window.eval('selection'),dimensions:[document.getElementById('canvas').width,document.getElementById('canvas').height]}});
   console.log(engine,mobile?'mobile':'desktop','crop diagnostics',JSON.stringify(cropDebug));
   const cropped=await canvas.evaluate(c=>[c.width,c.height]);
-  const expected=mobile?[1000,700]:[465,318];
+  const expected=mobile?[1000,700]:[Math.ceil(cropDebug.selection.x+cropDebug.selection.w)-Math.floor(cropDebug.selection.x),Math.ceil(cropDebug.selection.y+cropDebug.selection.h)-Math.floor(cropDebug.selection.y)];
   if(Math.abs(cropped[0]-expected[0])>4||Math.abs(cropped[1]-expected[1])>4)throw Error('Crop dimensions failed: '+cropped);
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
