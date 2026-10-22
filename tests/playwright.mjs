@@ -656,6 +656,21 @@ try{
     }finally{l.selectionMask=previous;l.locked=locked;selection=previousSelection;refresh()}
   });
   if(Object.values(selectionMaskQA).some(v=>v!==true))throw Error('Selection mask regression: '+JSON.stringify(selectionMaskQA));
+  const invertMaskQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const previous=l.selectionMask,locked=l.locked;
+    try{
+      l.locked=false;l.selectionMask={x:5,y:5,w:20,h:20};refresh();
+      document.getElementById('invertSelectionMask').click();
+      const inverted=l.selectionMask.inverted===true;
+      const persisted=capture().layers.find(x=>x.id===l.id).selectionMask.inverted===true;
+      l.locked=true;document.getElementById('invertSelectionMask').click();
+      const protectedLayer=l.selectionMask.inverted===true;
+      l.locked=false;document.getElementById('invertSelectionMask').click();
+      return {inverted,persisted,protectedLayer,reversible:l.selectionMask.inverted===false};
+    }finally{l.selectionMask=previous;l.locked=locked;refresh()}
+  });
+  if(Object.values(invertMaskQA).some(v=>v!==true))throw Error('Invert selection mask regression: '+JSON.stringify(invertMaskQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
