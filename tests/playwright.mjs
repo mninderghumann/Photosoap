@@ -685,6 +685,28 @@ try{
     }finally{l.selectionMask=old;l.locked=locked;refresh()}
   });
   if(Object.values(selectionMaskFeatherQA).some(v=>v!==true))throw Error('Mask feather regression: '+JSON.stringify(selectionMaskFeatherQA));
+  const maskBatchQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'no layer'};
+    const old=l.selectionMask,locked=l.locked;
+    try{
+      l.locked=false;l.selectionMask={x:20,y:20,w:60,h:60,feather:12};refresh();
+      document.getElementById('toggleSelectionMask').click();
+      const disabled=l.selectionMask.enabled===false;
+      document.getElementById('toggleSelectionMask').click();
+      const enabled=l.selectionMask.enabled===true;
+      document.getElementById('resetSelectionFeather').click();
+      const reset=l.selectionMask.feather===0;
+      document.getElementById('expandSelectionMask').click();
+      const expanded=l.selectionMask.x===15&&l.selectionMask.w===70;
+      document.getElementById('contractSelectionMask').click();
+      const contracted=l.selectionMask.x===20&&l.selectionMask.w===60;
+      const saved=capture().layers.find(x=>x.id===l.id).selectionMask.enabled===true;
+      l.locked=true;document.getElementById('expandSelectionMask').click();
+      const lockProtected=l.selectionMask.w===60;
+      return {disabled,enabled,reset,expanded,contracted,saved,lockProtected};
+    }finally{l.selectionMask=old;l.locked=locked;refresh()}
+  });
+  if(Object.values(maskBatchQA).some(v=>v!==true))throw Error('Mask batch regression: '+JSON.stringify(maskBatchQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
