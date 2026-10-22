@@ -671,6 +671,20 @@ try{
     }finally{l.selectionMask=previous;l.locked=locked;refresh()}
   });
   if(Object.values(invertMaskQA).some(v=>v!==true))throw Error('Invert selection mask regression: '+JSON.stringify(invertMaskQA));
+  const featherQA=await page.evaluate(()=>{
+    const l=active();if(!l)return {error:'No active layer'};
+    const old=l.selectionMask,locked=l.locked;
+    try{
+      l.locked=false;l.selectionMask={x:10,y:10,w:40,h:40,feather:0};refresh();
+      const el=document.getElementById('selectionMaskFeather');
+      el.value='12';el.dispatchEvent(new Event('input',{bubbles:true}));
+      const changed=l.selectionMask.feather===12;
+      const persisted=capture().layers.find(x=>x.id===l.id).selectionMask.feather===12;
+      l.locked=true;el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}));
+      return {changed,persisted,lockedPreserved:l.selectionMask.feather===12};
+    }finally{l.selectionMask=old;l.locked=locked;refresh()}
+  });
+  if(Object.values(featherQA).some(v=>v!==true))throw Error('Mask feather regression: '+JSON.stringify(featherQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
