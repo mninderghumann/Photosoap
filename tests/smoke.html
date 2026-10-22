@@ -29,7 +29,8 @@ document.getElementById('app').onload=()=>{
  d.getElementById('selectall').click();check(app.eval('selection.w')===1000,'select all');d.getElementById('deselect').click();check(app.eval('selection')===null,'deselect');
  
 check(!!d.getElementById('maskBrushToggle'),'mask brush controls');d.getElementById('maskBrushToggle').click();check(app.eval('maskBrushEditing')===true,'mask editing enabled');check(typeof app.PhotosoapMaskBrush.paint==='function','mask brush module loaded');d.getElementById('maskBrushToggle').click();
- out.textContent='PASS: editor smoke tests';
+ check(!!d.getElementById('selectionIntersect'),'selection intersection control');check(!!d.getElementById('selectionSave'),'save selection control');check(!!d.getElementById('selectionRestore'),'restore selection control');const selectionGeometry=app.PhotosoapSelectionGeometry;const selectionOverlap=selectionGeometry.intersect({x:0,y:0,w:20,h:20},{x:10,y:5,w:20,h:20});check(selectionOverlap.x===10&&selectionOverlap.y===5&&selectionOverlap.w===10&&selectionOverlap.h===15,'selection overlap geometry');d.getElementById('selectall').click();d.getElementById('selectionSave').click();d.getElementById('deselect').click();d.getElementById('selectionRestore').click();check(app.eval('selection.w')===1000,'saved selection restore');d.getElementById('deselect').click();
+out.textContent='PASS: editor smoke tests';
  }catch(e){out.textContent='FAIL: '+e.message}
  },350);
  }catch(e){out.textContent='FAIL: '+e.message}
