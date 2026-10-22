@@ -671,7 +671,7 @@ try{
     }finally{l.selectionMask=previous;l.locked=locked;refresh()}
   });
   if(Object.values(invertMaskQA).some(v=>v!==true))throw Error('Invert selection mask regression: '+JSON.stringify(invertMaskQA));
-  const featherQA=await page.evaluate(()=>{
+  const selectionMaskFeatherQA=await page.evaluate(()=>{
     const l=active();if(!l)return {error:'No active layer'};
     const old=l.selectionMask,locked=l.locked;
     try{
@@ -684,7 +684,7 @@ try{
       return {changed,persisted,lockedPreserved:l.selectionMask.feather===12};
     }finally{l.selectionMask=old;l.locked=locked;refresh()}
   });
-  if(Object.values(featherQA).some(v=>v!==true))throw Error('Mask feather regression: '+JSON.stringify(featherQA));
+  if(Object.values(selectionMaskFeatherQA).some(v=>v!==true))throw Error('Mask feather regression: '+JSON.stringify(selectionMaskFeatherQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
