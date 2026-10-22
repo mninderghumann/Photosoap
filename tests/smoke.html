@@ -4,6 +4,7 @@ document.getElementById('app').onload=()=>{
  try {
  const w=document.getElementById('app').contentWindow,d=w.document;
  const check=(condition,message)=>{if(!condition)throw Error(message)};
+ const waitFor=async predicate=>{const until=Date.now()+5000;while(Date.now()<until){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,40))}throw Error('Timed out waiting for document restore')};
  check(d.getElementById('canvas').width===1000,'canvas width');
  check(d.querySelectorAll('#layers li').length===1,'initial background');
  d.getElementById('add').click();
@@ -14,13 +15,13 @@ document.getElementById('app').onload=()=>{
  d.getElementById('rectangle').click();
  check(d.querySelectorAll('#layers li').length===3,'shape creation');
  d.getElementById('undo').click();
- setTimeout(()=>{
+ setTimeout(async ()=>{
  try{
- check(d.querySelectorAll('#layers li').length===2,'undo');
+ await waitFor(()=>d.querySelectorAll('#layers li').length===2);check(d.querySelectorAll('#layers li').length===2,'undo');
  d.getElementById('redo').click();
  setTimeout(async ()=>{
  try{
- check(d.querySelectorAll('#layers li').length===3,'redo');
+ await waitFor(()=>d.querySelectorAll('#layers li').length===3);check(d.querySelectorAll('#layers li').length===3,'redo');
  const png=d.getElementById('canvas').toDataURL('image/png');
  check(png.startsWith('data:image/png;base64,'),'canvas PNG');
  const app=w;const snap=app.capture();check(app.validateDocument({format:'photosoap',version:1,...snap}).version===2,'v1 migration');
