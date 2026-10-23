@@ -736,11 +736,15 @@ try{
     document.getElementById('proRasterApply').click();
     const saved=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
     const after=c.getImageData(0,0,1,1).data[0];
+    // A second adjustment must use the unfiltered original, not accumulate brightness.
+    document.getElementById('proRasterRadius').value='15';
+    document.getElementById('proRasterApply').click();
+    const adjusted=c.getImageData(0,0,1,1).data[0];
     document.getElementById('proRasterResetFilter').click();
     const restored=c.getImageData(0,0,1,1).data[0];
     const reset=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
     window.eval('restore')(original);
-    return {saved:typeof saved==='string'&&saved.startsWith('data:image/png;base64,'),changed:after!==before,restored:restored===before,reset:reset===undefined};
+    return {saved:typeof saved==='string'&&saved.startsWith('data:image/png;base64,'),changed:after===before+30,readjusted:adjusted===before+15,restored:restored===before,reset:reset===undefined};
   });
   if(Object.values(rasterQA).some(v=>v!==true))throw Error('Raster UI regression: '+JSON.stringify(rasterQA));
   if(errors.length)throw Error(errors.join('; '));
