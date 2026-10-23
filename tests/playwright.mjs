@@ -150,7 +150,8 @@ try{
   await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
-    await page.locator('#fit').click();
+    await page.locator('#zoom').fill('100');
+    await page.locator('#zoom').dispatchEvent('input');
     await canvas.scrollIntoViewIfNeeded();
     const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
     const screen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
@@ -296,6 +297,9 @@ try{
   if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
   // Dragging the group bounding-box corner must resize both editable members.
   await page.locator('[data-tool="select"]').click();
+  await page.locator('#zoom').fill('100');
+  await page.locator('#zoom').dispatchEvent('input');
+  await canvas.scrollIntoViewIfNeeded();
   if(!mobile){
     const bounds=await page.evaluate(()=>{const l=active();return l?.groupId?groupBounds(l.groupId):null});
     if(!bounds||bounds.w<=0||bounds.h<=0)throw Error('Missing group bounds for handle test');
