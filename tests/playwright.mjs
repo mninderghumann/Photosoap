@@ -765,6 +765,18 @@ try{
     return {applied:status.includes('Applied'),filled:center[0]<200,unselected:outside[0]===60&&outside[1]===120&&outside[2]===180};
   });
   if(Object.values(objectRemovalQA).some(v=>v!==true))throw Error('Object removal UI regression: '+JSON.stringify(objectRemovalQA));
+  const noSelectionQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d');
+    const before=Array.from(c.getImageData(0,0,1,1).data);
+    window.eval('selection = null');
+    document.getElementById('proRasterAction').value='removeObject';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=Array.from(c.getImageData(0,0,1,1).data);
+    return {blocked:status.includes('Draw a selection'),unchanged:before.every((v,i)=>v===after[i])};
+  });
+  if(Object.values(noSelectionQA).some(v=>v!==true))throw Error('No-selection safety regression: '+JSON.stringify(noSelectionQA));
+
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
