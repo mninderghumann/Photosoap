@@ -150,6 +150,8 @@ try{
   await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
+    await page.locator('#fit').click();
+    await canvas.scrollIntoViewIfNeeded();
     const box=await canvas.boundingBox(),size=await canvas.evaluate(c=>({w:c.width,h:c.height}));
     const screen=(x,y)=>({x:box.x+x*box.width/size.w,y:box.y+y*box.height/size.h});
     const cx=rotated.x+rotated.w/2,cy=rotated.y+rotated.h/2,a=rotated.rotation*Math.PI/180;
