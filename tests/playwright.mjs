@@ -642,9 +642,9 @@ try{
   if(!maskResetQA.cleared||!maskResetQA.persisted||!maskResetQA.lockedPreserved)throw Error('Mask reset regression: '+JSON.stringify(maskResetQA));
   const selectionMaskQA=await page.evaluate(()=>{
     const l=active();if(!l)return {error:'No active layer'};
-    const previous=l.selectionMask,locked=l.locked,previousSelection=selection;
+    const previous=l.selectionMask,locked=l.locked,previousSelection=selection,previousX=l.x,previousY=l.y;
     try{
-      l.locked=false;selection={x:l.x+12,y:l.y+15,w:40,h:35};refresh();
+      l.locked=false;l.x=0;l.y=0;selection={x:12,y:15,w:40,h:35};refresh();
       document.getElementById('maskFromSelection').click();
       const created=!!l.selectionMask&&l.selectionMask.w===40&&l.selectionMask.h===35;
       const persisted=!!capture().layers.find(x=>x.id===l.id).selectionMask;
@@ -652,7 +652,7 @@ try{
       const protectedLayer=!!l.selectionMask;
       l.locked=false;document.getElementById('removeSelectionMask').click();
       return {created,persisted,protectedLayer,removed:!l.selectionMask};
-    }finally{l.selectionMask=previous;l.locked=locked;selection=previousSelection;refresh()}
+    }finally{l.selectionMask=previous;l.locked=locked;l.x=previousX;l.y=previousY;selection=previousSelection;refresh()}
   });
   if(Object.values(selectionMaskQA).some(v=>v!==true))throw Error('Selection mask regression: '+JSON.stringify(selectionMaskQA));
   const invertMaskQA=await page.evaluate(()=>{
