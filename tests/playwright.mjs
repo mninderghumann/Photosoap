@@ -791,6 +791,21 @@ try{
     return {applied:status.includes('Applied'),changedAlpha:alpha<255};
   });
   if(Object.values(maskQA).some(v=>v!==true))throw Error('Mask UI regression: '+JSON.stringify(maskQA));
+  const healingQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(40,40,40)';c.fillRect(0,0,40,40);
+    c.fillStyle='rgb(240,240,240)';c.fillRect(20,20,1,1);
+    window.eval('selection = {x:'+(l.x+18)+',y:'+(l.y+18)+',w:5,h:5}');
+    document.getElementById('proRasterAction').value='heal';
+    document.getElementById('proRasterRadius').value='5';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const healed=c.getImageData(20,20,1,1).data[0];
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),softened:healed<240};
+  });
+  if(Object.values(healingQA).some(v=>v!==true))throw Error('Healing UI regression: '+JSON.stringify(healingQA));
+
 
 
   if(errors.length)throw Error(errors.join('; '));
