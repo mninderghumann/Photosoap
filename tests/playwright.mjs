@@ -738,6 +738,124 @@ try{
     }finally{restore(original)}
   });
   if(Object.values(clippingMaskQA).some(v=>v!==true))throw Error('Clipping mask regression: '+JSON.stringify(clippingMaskQA));
+  // Phase 5: exercise real raster UI, selection dimensions, reversible filter and restore.
+  const rasterQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),panel=document.getElementById('proRasterAction');
+    if(!l||!panel)return {error:'Missing raster controls'};
+    const c=l.canvas.getContext('2d');
+    // White background saturates at 255 under brightness; seed a deterministic midtone.
+    c.fillStyle='rgb(80,80,80)';c.fillRect(0,0,1,1);
+    const before=c.getImageData(0,0,1,1).data[0];
+    const original=window.eval('capture()');
+    panel.value='smartFilter';
+    document.getElementById('proRasterRadius').value='30';
+    document.getElementById('proRasterApply').click();
+    const saved=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
+    const after=c.getImageData(0,0,1,1).data[0];
+    // A second adjustment must use the unfiltered original, not accumulate brightness.
+    document.getElementById('proRasterRadius').value='15';
+    document.getElementById('proRasterApply').click();
+    const adjusted=c.getImageData(0,0,1,1).data[0];
+    document.getElementById('proRasterResetFilter').click();
+    const restored=c.getImageData(0,0,1,1).data[0];
+    const reset=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
+    window.eval('restore')(original);
+    return {saved:typeof saved==='string'&&saved.startsWith('data:image/png;base64,'),changed:after===before+30,readjusted:adjusted===before+15,restored:restored===before,reset:reset===undefined};
+  });
+  if(Object.values(rasterQA).some(v=>v!==true))throw Error('Raster UI regression: '+JSON.stringify(rasterQA));
+  const objectRemovalQA=await page.evaluate(()=>{
+    const l=window.eval('active()');
+    const c=l.canvas.getContext('2d');
+    const original=window.eval('capture()');
+    c.fillStyle='rgb(60,120,180)';
+    c.fillRect(0,0,30,30);
+    c.fillStyle='rgb(250,10,10)';
+    c.fillRect(5,5,6,6);
+    window.eval('selection = {x:'+ (l.x+5) +',y:'+(l.y+5)+',w:6,h:6}');
+    document.getElementById('proRasterAction').value='removeObject';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const center=Array.from(c.getImageData(8,8,1,1).data);
+    const outside=Array.from(c.getImageData(2,2,1,1).data);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),filled:center[0]<200,unselected:outside[0]===60&&outside[1]===120&&outside[2]===180};
+  });
+  if(Object.values(objectRemovalQA).some(v=>v!==true))throw Error('Object removal UI regression: '+JSON.stringify(objectRemovalQA));
+  const noSelectionQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d');
+    const before=Array.from(c.getImageData(0,0,1,1).data);
+    window.eval('selection = null');
+    document.getElementById('proRasterAction').value='removeObject';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=Array.from(c.getImageData(0,0,1,1).data);
+    return {blocked:status.includes('Draw a selection'),unchanged:before.every((v,i)=>v===after[i])};
+  });
+  if(Object.values(noSelectionQA).some(v=>v!==true))throw Error('No-selection safety regression: '+JSON.stringify(noSelectionQA));
+  const maskQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d');
+    const original=window.eval('capture()');
+    const x=20,y=20;
+    c.fillStyle='rgb(90,120,150)';c.fillRect(x-3,y-3,7,7);
+    window.eval('selection = {x:'+(l.x+x-2)+',y:'+(l.y+y-2)+',w:4,h:4}');
+    document.getElementById('proRasterAction').value='mask';
+    document.getElementById('proRasterRadius').value='3';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const alpha=c.getImageData(x,y,1,1).data[3];
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),changedAlpha:alpha<255};
+  });
+  if(Object.values(maskQA).some(v=>v!==true))throw Error('Mask UI regression: '+JSON.stringify(maskQA));
+  const healingQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(40,40,40)';c.fillRect(0,0,40,40);
+    c.fillStyle='rgb(240,240,240)';c.fillRect(20,20,1,1);
+    window.eval('selection = {x:'+(l.x+18)+',y:'+(l.y+18)+',w:5,h:5}');
+    document.getElementById('proRasterAction').value='heal';
+    document.getElementById('proRasterRadius').value='5';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const healed=c.getImageData(20,20,1,1).data[0];
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),softened:healed<240};
+  });
+  if(Object.values(healingQA).some(v=>v!==true))throw Error('Healing UI regression: '+JSON.stringify(healingQA));
+  const liquifyQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(20,40,60)';c.fillRect(0,0,50,50);
+    c.fillStyle='rgb(220,180,140)';c.fillRect(18,18,10,10);
+    window.eval('selection = {x:'+(l.x+15)+',y:'+(l.y+15)+',w:18,h:18}');
+    const before=new Uint8ClampedArray(c.getImageData(15,15,18,18).data);
+    document.getElementById('proRasterAction').value='liquify';
+    document.getElementById('proRasterRadius').value='7';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=c.getImageData(15,15,18,18).data;
+    const changed=after.some((value,index)=>value!==before[index]);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),hasWarpedPixels:changed};
+  });
+  if(Object.values(liquifyQA).some(v=>v!==true))throw Error('Liquify UI regression: '+JSON.stringify(liquifyQA));
+  const frequencyHighQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(100,110,120)';c.fillRect(0,0,30,30);
+    c.fillStyle='rgb(230,210,190)';c.fillRect(10,10,5,5);
+    const before=Array.from(c.getImageData(12,12,1,1).data);
+    document.getElementById('proRasterAction').value='frequencyHigh';
+    document.getElementById('proRasterRadius').value='4';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=Array.from(c.getImageData(12,12,1,1).data);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),encoded:before.some((v,i)=>i<3&&v!==after[i])};
+  });
+  if(Object.values(frequencyHighQA).some(v=>v!==true))throw Error('High-frequency UI regression: '+JSON.stringify(frequencyHighQA));
+
+
+
+
+
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
