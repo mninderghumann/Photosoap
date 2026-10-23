@@ -74,7 +74,7 @@ try{
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
   if(!mobile){
-    await page.locator('#zoom').fill('50');
+    await page.locator('#zoom').fill('75');
     await page.locator('[data-tool="select"]').click();
     const z=await canvas.boundingBox();
     await page.mouse.move(z.x+z.width*.1,z.y+z.height*.1);
@@ -89,6 +89,7 @@ try{
     // Cropped test canvas is only ~401px wide; narrow viewport to force real overflow.
     await page.setViewportSize({width:850,height:700});
     await page.locator('#zoom').fill('200');
+    await page.evaluate(()=>{const c=document.getElementById('canvas');c.parentElement.style.width='360px';c.parentElement.style.height='280px';c.parentElement.style.overflow='auto'});
     const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=0;v.scrollTop=0;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
     await page.locator('#pan').click();
     const panBox=await canvas.boundingBox();
@@ -101,6 +102,7 @@ try{
     if(afterPan.scroll[0]===beforePan.scroll[0]&&afterPan.scroll[1]===beforePan.scroll[1])throw Error('Pan did not scroll viewport: '+JSON.stringify({beforePan,afterPan}));
     await page.locator('#pan').click();
     await page.locator('#fit').click();
+    await page.evaluate(()=>{const v=document.getElementById('canvas').parentElement;v.style.width='';v.style.height='';v.style.overflow=''});
     await page.setViewportSize({width:1440,height:900});
   }
   // Editable shape drag and corner resize must update geometry without flattening metadata.
