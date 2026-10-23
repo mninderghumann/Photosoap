@@ -722,6 +722,24 @@ try{
     }finally{restore(original)}
   });
   if(Object.values(clippingMaskQA).some(v=>v!==true))throw Error('Clipping mask regression: '+JSON.stringify(clippingMaskQA));
+  // Phase 5: exercise real raster UI, selection dimensions, reversible filter and restore.
+  const rasterQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),panel=document.getElementById('proRasterAction');
+    if(!l||!panel)return {error:'Missing raster controls'};
+    const c=l.canvas.getContext('2d'),before=c.getImageData(0,0,1,1).data[0];
+    const original=window.eval('capture()');
+    panel.value='smartFilter';
+    document.getElementById('proRasterRadius').value='30';
+    document.getElementById('proRasterApply').click();
+    const saved=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
+    const after=c.getImageData(0,0,1,1).data[0];
+    document.getElementById('proRasterResetFilter').click();
+    const restored=c.getImageData(0,0,1,1).data[0];
+    const reset=window.eval('capture()').layers.find(x=>x.id===l.id).proFilterOriginal;
+    window.eval('restore')(original);
+    return {saved:typeof saved==='string'&&saved.startsWith('data:image/png;base64,'),changed:after!==before,restored:restored===before,reset:reset===undefined};
+  });
+  if(Object.values(rasterQA).some(v=>v!==true))throw Error('Raster UI regression: '+JSON.stringify(rasterQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
