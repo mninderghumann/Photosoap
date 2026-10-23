@@ -125,3 +125,29 @@ const selectionGeometryControls=document.createElement('div');selectionGeometryC
 const vectorControls=document.createElement('div');vectorControls.id='vectorPathControls';vectorControls.style.cssText='display:flex;gap:6px;flex-wrap:wrap;padding:8px';vectorControls.innerHTML='<button type="button" id="vectorAddCubic">Add Bézier curve layer</button><label>Curve stroke <input type="color" id="vectorStroke" value="#2554aa"></label><label>Width <input type="number" id="vectorWidth" min="1" max="40" value="4" style="width:60px"></label>';canvas.parentElement.parentElement.appendChild(vectorControls);$('vectorAddCubic').onclick=()=>{if(layers.length>=MAX_LAYERS){alert('Layer limit reached');return}checkpoint();const l=layer('Bézier Curve');const p=l.canvas.getContext('2d');p.strokeStyle=$('vectorStroke').value;p.lineWidth=Math.max(1,Math.min(40,Number($('vectorWidth').value)||4));p.lineCap='round';p.beginPath();const a={x:canvas.width*.15,y:canvas.height*.7},c1={x:canvas.width*.3,y:canvas.height*.15},c2={x:canvas.width*.7,y:canvas.height*.15},b={x:canvas.width*.85,y:canvas.height*.7};for(let i=0;i<=120;i++){const q=PhotosoapVectorPaths.cubic(a,c1,c2,b,i/120);if(i===0)p.moveTo(q.x,q.y);else p.lineTo(q.x,q.y)}p.stroke();layers.push(l);selected=l.id;refresh()};
 const typographyControls=document.createElement('div');typographyControls.id='typographyControls';typographyControls.style.cssText='display:flex;gap:6px;flex-wrap:wrap;padding:8px';typographyControls.innerHTML='<textarea id="typographyText" rows="2" placeholder="Enter text" aria-label="Text to add">Photosoap typography</textarea><label>Size <input type="number" id="typographySize" min="8" max="160" value="32" style="width:65px"></label><label>Wrap width <input type="number" id="typographyWrap" min="80" max="2000" value="400" style="width:75px"></label><label>Line height <input type="number" id="typographyLeading" min="0.7" max="3" step="0.1" value="1.2" style="width:65px"></label><label>Align <select id="typographyAlign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label><label>Color <input type="color" id="typographyColor" value="#202020"></label><button type="button" id="typographyAdd">Add Wrapped Text Layer</button>';canvas.parentElement.parentElement.appendChild(typographyControls);$('typographyAdd').onclick=()=>{if(layers.length>=MAX_LAYERS){alert('Layer limit reached');return}checkpoint();const l=layer('Wrapped Text');const p=l.canvas.getContext('2d');const size=Math.max(8,Math.min(160,Number($('typographySize').value)||32)),width=Math.max(80,Math.min(canvas.width-30,Number($('typographyWrap').value)||400)),leading=Math.max(.7,Math.min(3,Number($('typographyLeading').value)||1.2));p.font=size+'px sans-serif';p.fillStyle=$('typographyColor').value;p.textBaseline='top';const align=$('typographyAlign').value;p.textAlign=align;const lines=PhotosoapTypographyLayout.wrap(p,$('typographyText').value,width);const step=PhotosoapTypographyLayout.lineHeight(size,leading);const x=align==='center'?20+width/2:align==='right'?20+width:20;lines.forEach((line,i)=>{if(20+i*step<canvas.height)p.fillText(line,x,20+i*step,width)});layers.push(l);selected=l.id;refresh()};
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
+
+/* Phase 5 Batch 1: raster tool integration. Operations are undoable. */
+$('proRasterApply').onclick=()=>{
+ const l=active(),status=$('proRasterStatus'),p=window.PhotosoapPro;
+ if(!l||l.locked){status.textContent='Select an unlocked layer first';return}
+ if(!p){status.textContent='Raster module unavailable';return}
+ const w=l.canvas.width,h=l.canvas.height,r=Number($('proRasterRadius').value),action=$('proRasterAction').value;
+ const rect=selection?{x:Math.max(0,selection.x-l.x),y:Math.max(0,selection.y-l.y),width:selection.width,height:selection.height}:{x:Math.floor(w*.35),y:Math.floor(h*.35),width:Math.max(1,Math.floor(w*.3)),height:Math.max(1,Math.floor(h*.3))};
+ const center={x:Math.floor(rect.x+rect.width/2),y:Math.floor(rect.y+rect.height/2)};
+ try{
+ const c=l.canvas.getContext('2d'),source=c.getImageData(0,0,w,h);let output;
+ switch(action){
+ case 'refineEdge':output=p.refineEdge(source,r);break;
+ case 'heal':output=p.heal(source,center.x,center.y,r);break;
+ case 'cloneStamp':output=p.cloneStamp(source,{x:center.x-r,y:center.y-r},center,r);break;
+ case 'removeObject':output=p.removeObject(source,rect);break;
+ case 'mask':output=p.mask(source,[center],r,Math.max(1,r/3));break;
+ case 'frequencySeparation':output=p.frequencySeparation(source,r).low;break;
+ case 'liquify':output=p.liquify(source,center,{x:r/2,y:0},Math.max(20,r*2));break;
+ case 'perspective':output=p.perspective(source,[{x:r,y:0},{x:w-1,y:r},{x:w-1-r,y:h-1},{x:0,y:h-1-r}]);break;
+ case 'smartFilter':output=p.smartFilter(source,[{type:'brightness',amount:r}]);break;
+ default:throw Error('Unknown operation');
+ }
+ checkpoint();c.putImageData(output,0,0);render();scheduleAutosave();status.textContent='Applied '+action+' (undo available)';
+ }catch(error){status.textContent='Operation failed: '+error.message}
+};
