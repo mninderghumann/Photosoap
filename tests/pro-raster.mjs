@@ -29,4 +29,15 @@ assert.equal(edgeFill.data.length,input.data.length,'border touching fill must b
 assert.deepEqual(Array.from(edgeFill.data.slice((7*8+7)*4,(7*8+7)*4+4)),original.slice((7*8+7)*4,(7*8+7)*4+4),'pixels outside fill must be preserved');
 const allFill=p.removeObject(input,{x:0,y:0,width:8,height:8});
 assert.equal(allFill.data.length,input.data.length,'full-canvas fill must not throw');
+
+const checker=new ImageData(new Uint8ClampedArray(12*12*4),12,12);
+for(let y=0;y<12;y++)for(let x=0;x<12;x++){const k=(y*12+x)*4;checker.data[k]=(x<6?20:220);checker.data[k+1]=70;checker.data[k+2]=90;checker.data[k+3]=255}
+const warped=p.perspective(checker,[{x:2,y:0},{x:11,y:0},{x:11,y:11},{x:2,y:11}]);
+assert.equal(warped.data[(4*12+0)*4],20,'perspective samples the left source edge');
+assert.equal(warped.data[(4*12+5)*4],220,'perspective maps output through displaced corners');
+assert.deepEqual(Array.from(checker.data.slice(0,4)),[20,70,90,255],'perspective must preserve input');
+const separated=p.frequencySeparation(checker,2);
+assert.equal(separated.low.width,12);
+assert.equal(separated.high.width,12);
+assert.notDeepEqual(Array.from(separated.high.data),Array.from(checker.data),'high frequency layer should be encoded separately');
 console.log('Phase 5 raster primitive tests passed');
