@@ -776,6 +776,22 @@ try{
     return {blocked:status.includes('Draw a selection'),unchanged:before.every((v,i)=>v===after[i])};
   });
   if(Object.values(noSelectionQA).some(v=>v!==true))throw Error('No-selection safety regression: '+JSON.stringify(noSelectionQA));
+  const maskQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d');
+    const original=window.eval('capture()');
+    const x=20,y=20;
+    c.fillStyle='rgb(90,120,150)';c.fillRect(x-3,y-3,7,7);
+    window.eval('selection = {x:'+(l.x+x-2)+',y:'+(l.y+y-2)+',w:4,h:4}');
+    document.getElementById('proRasterAction').value='mask';
+    document.getElementById('proRasterRadius').value='3';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const alpha=c.getImageData(x,y,1,1).data[3];
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),changedAlpha:alpha<255};
+  });
+  if(Object.values(maskQA).some(v=>v!==true))throw Error('Mask UI regression: '+JSON.stringify(maskQA));
+
 
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
