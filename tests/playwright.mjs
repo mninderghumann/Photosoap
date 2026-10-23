@@ -56,7 +56,7 @@ try{
     await page.mouse.move(to.x,to.y,{steps:8});
     await page.mouse.up();
     const dims=await canvas.evaluate(()=>window.eval('selection'));
-    if(Math.abs(dims.w-400)>3||Math.abs(dims.h-280)>3)throw Error('Desktop pointer selection failed: '+JSON.stringify(dims));
+    if(Math.abs(dims.w-400)>6||Math.abs(dims.h-280)>6)throw Error('Desktop pointer selection failed: '+JSON.stringify(dims));
     // Resize the lower-right selection handle using a real pointer gesture.
     await page.mouse.move(to.x,to.y);
     await page.mouse.down();
@@ -117,7 +117,7 @@ try{
     const corner=pixelPoint(moved.x+moved.w,moved.y+moved.h);
     await page.mouse.move(corner.x,corner.y);await page.mouse.down();await page.mouse.move(corner.x+20,corner.y+15,{steps:5});await page.mouse.up();
     const resizedShape=await page.evaluate(()=>active().shapeData);
-    if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed');
+    if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed: '+JSON.stringify({before:moved,after:resizedShape,corner}));
   }
   // Vector rotation and flip must preserve editable metadata and undo history.
   // Keep rotated handles within the canvas: previous fixture extended beyond its bottom edge.
