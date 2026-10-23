@@ -726,7 +726,10 @@ try{
   const rasterQA=await page.evaluate(()=>{
     const l=window.eval('active()'),panel=document.getElementById('proRasterAction');
     if(!l||!panel)return {error:'Missing raster controls'};
-    const c=l.canvas.getContext('2d'),before=c.getImageData(0,0,1,1).data[0];
+    const c=l.canvas.getContext('2d');
+    // White background saturates at 255 under brightness; seed a deterministic midtone.
+    c.fillStyle='rgb(80,80,80)';c.fillRect(0,0,1,1);
+    const before=c.getImageData(0,0,1,1).data[0];
     const original=window.eval('capture()');
     panel.value='smartFilter';
     document.getElementById('proRasterRadius').value='30';
