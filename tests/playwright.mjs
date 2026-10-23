@@ -150,6 +150,7 @@ try{
   await page.locator('[data-tool="select"]').click();
   if(!mobile){
     const rotated=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
+    await canvas.evaluate(c=>{const stage=c.parentElement;stage.style.height='700px';stage.style.overflow='auto';stage.scrollTop=0;stage.scrollLeft=0});
     await page.locator('#zoom').fill('100');
     await page.locator('#zoom').dispatchEvent('input');
     await canvas.scrollIntoViewIfNeeded();
@@ -297,6 +298,7 @@ try{
   if(groupCheck.error||!groupCheck.id||groupCheck.before.length!==2||groupCheck.after.length!==2||groupCheck.after.some((v,i)=>Math.abs(v.w-groupCheck.before[i].w*1.5)>0.01||Math.abs(v.h-groupCheck.before[i].h*1.5)>0.01))throw Error('Grouped vector scaling regression: '+JSON.stringify(groupCheck));
   // Dragging the group bounding-box corner must resize both editable members.
   await page.locator('[data-tool="select"]').click();
+  await canvas.evaluate(c=>{const stage=c.parentElement;stage.style.height='700px';stage.style.overflow='auto';stage.scrollTop=0;stage.scrollLeft=0});
   await page.locator('#zoom').fill('100');
   await page.locator('#zoom').dispatchEvent('input');
   await canvas.scrollIntoViewIfNeeded();
