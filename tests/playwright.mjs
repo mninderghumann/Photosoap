@@ -821,6 +821,21 @@ try{
     return {applied:status.includes('Applied'),hasWarpedPixels:changed};
   });
   if(Object.values(liquifyQA).some(v=>v!==true))throw Error('Liquify UI regression: '+JSON.stringify(liquifyQA));
+  const frequencyHighQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(100,110,120)';c.fillRect(0,0,30,30);
+    c.fillStyle='rgb(230,210,190)';c.fillRect(10,10,5,5);
+    const before=Array.from(c.getImageData(12,12,1,1).data);
+    document.getElementById('proRasterAction').value='frequencyHigh';
+    document.getElementById('proRasterRadius').value='4';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=Array.from(c.getImageData(12,12,1,1).data);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),encoded:before.some((v,i)=>i<3&&v!==after[i])};
+  });
+  if(Object.values(frequencyHighQA).some(v=>v!==true))throw Error('High-frequency UI regression: '+JSON.stringify(frequencyHighQA));
+
 
 
 
