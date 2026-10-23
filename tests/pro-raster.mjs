@@ -23,4 +23,10 @@ assert.deepEqual(Array.from(input.data),original,'operations must not mutate sou
 assert.notDeepEqual(Array.from(outputs[1].data),original,'mask must change pixels');
 assert.throws(()=>p.perspective(input,[]),/Four corners/);
 assert.throws(()=>p.smartFilter(input,[{type:'unknown'}]),/Unknown filter/);
+
+const edgeFill=p.removeObject(input,{x:0,y:0,width:3,height:3});
+assert.equal(edgeFill.data.length,input.data.length,'border touching fill must be safe');
+assert.deepEqual(Array.from(edgeFill.data.slice((7*8+7)*4,(7*8+7)*4+4)),original.slice((7*8+7)*4,(7*8+7)*4+4),'pixels outside fill must be preserved');
+const allFill=p.removeObject(input,{x:0,y:0,width:8,height:8});
+assert.equal(allFill.data.length,input.data.length,'full-canvas fill must not throw');
 console.log('Phase 5 raster primitive tests passed');
