@@ -805,6 +805,23 @@ try{
     return {applied:status.includes('Applied'),softened:healed<240};
   });
   if(Object.values(healingQA).some(v=>v!==true))throw Error('Healing UI regression: '+JSON.stringify(healingQA));
+  const liquifyQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    c.fillStyle='rgb(20,40,60)';c.fillRect(0,0,50,50);
+    c.fillStyle='rgb(220,180,140)';c.fillRect(18,18,10,10);
+    window.eval('selection = {x:'+(l.x+15)+',y:'+(l.y+15)+',w:18,h:18}');
+    document.getElementById('proRasterAction').value='liquify';
+    document.getElementById('proRasterRadius').value='7';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const data=c.getImageData(15,15,18,18).data;
+    let changed=false;
+    for(let i=0;i<data.length;i+=4){if(data[i]!==20&&data[i]!==220){changed=true;break;}}
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),hasWarpedPixels:changed};
+  });
+  if(Object.values(liquifyQA).some(v=>v!==true))throw Error('Liquify UI regression: '+JSON.stringify(liquifyQA));
+
 
 
 
