@@ -128,7 +128,14 @@ const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';
 
 /* Phase 5 Batch 1: raster tool integration. Operations are undoable. */
 const proFilterBases=new Map();
-$('proRasterResetFilter').onclick=()=>{const l=active(),base=l&&proFilterBases.get(l.id);if(!base){$('proRasterStatus').textContent='No reversible filter for this layer';return}if(base.width!==l.canvas.width||base.height!==l.canvas.height){proFilterBases.delete(l.id);$('proRasterStatus').textContent='Layer size changed';return}checkpoint();l.canvas.getContext('2d').putImageData(base,0,0);proFilterBases.delete(l.id);render();scheduleAutosave();$('proRasterStatus').textContent='Original pixels restored'};
+function clearProFilterBases(){proFilterBases.clear()}
+function restoreProFilterBase(l){
+ const base=proFilterBases.get(l.id);
+ if(!base)return null;
+ if(base.width!==l.canvas.width||base.height!==l.canvas.height){proFilterBases.delete(l.id);return null}
+ return base;
+}
+$('proRasterResetFilter').onclick=()=>{const l=active(),base=l&&restoreProFilterBase(l);if(!base){$('proRasterStatus').textContent='No reversible filter for this layer';return}if(base.width!==l.canvas.width||base.height!==l.canvas.height){proFilterBases.delete(l.id);$('proRasterStatus').textContent='Layer size changed';return}checkpoint();l.canvas.getContext('2d').putImageData(base,0,0);proFilterBases.delete(l.id);render();scheduleAutosave();$('proRasterStatus').textContent='Original pixels restored'};
 $('proRasterApply').onclick=()=>{
  const l=active(),status=$('proRasterStatus'),p=window.PhotosoapPro;
  if(!l||l.locked){status.textContent='Select an unlocked layer first';return}
@@ -147,7 +154,7 @@ $('proRasterApply').onclick=()=>{
  case 'frequencySeparation':output=p.frequencySeparation(source,r).low;break;
  case 'liquify':output=p.liquify(source,center,{x:r/2,y:0},Math.max(20,r*2));break;
  case 'perspective':output=p.perspective(source,[{x:r,y:0},{x:w-1,y:r},{x:w-1-r,y:h-1},{x:0,y:h-1-r}]);break;
- case 'smartFilter':{const base=proFilterBases.get(l.id)||source;output=p.smartFilter(base,[{type:'brightness',amount:r}]);break;}
+ case 'smartFilter':{const base=restoreProFilterBase(l)||source;output=p.smartFilter(base,[{type:'brightness',amount:r}]);break;}
  default:throw Error('Unknown operation');
  }
  checkpoint();if(action==='smartFilter'&&!proFilterBases.has(l.id))proFilterBases.set(l.id,source);else if(action!=='smartFilter')proFilterBases.delete(l.id);c.putImageData(output,0,0);render();scheduleAutosave();status.textContent='Applied '+action+' (undo available)';
