@@ -77,11 +77,7 @@ try{
     await page.locator('#zoom').fill('75');
     await page.locator('[data-tool="select"]').click();
     await page.evaluate(()=>{window.eval('selection=null');});
-    const z=await canvas.boundingBox();
-    await page.mouse.move(z.x+z.width*.1,z.y+z.height*.1);
-    await page.mouse.down();
-    await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
-    await page.mouse.up();
+    await canvas.evaluate(c=>{const r=c.getBoundingClientRect();const emit=(type,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:42,pointerType:'mouse',isPrimary:true,buttons:type==='pointerup'?0:1,clientX:r.left+r.width*x,clientY:r.top+r.height*y}));const originalCapture=c.setPointerCapture;c.setPointerCapture=()=>{};try{emit('pointerdown',.1,.1);emit('pointermove',.4,.4);emit('pointerup',.4,.4)}finally{c.setPointerCapture=originalCapture}});
     const mapped=await canvas.evaluate(()=>window.eval('selection'));
     if(!mapped||Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
