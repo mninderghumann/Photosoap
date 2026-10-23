@@ -835,6 +835,22 @@ try{
     return {applied:status.includes('Applied'),encoded:before.some((v,i)=>i<3&&v!==after[i])};
   });
   if(Object.values(frequencyHighQA).some(v=>v!==true))throw Error('High-frequency UI regression: '+JSON.stringify(frequencyHighQA));
+  const perspectiveQA=await page.evaluate(()=>{
+    const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
+    const w=l.canvas.width,h=l.canvas.height;
+    c.fillStyle='rgb(30,60,90)';c.fillRect(0,0,w,h);
+    c.fillStyle='rgb(240,200,160)';c.fillRect(0,0,Math.max(20,Math.floor(w/3)),h);
+    const before=Array.from(c.getImageData(0,Math.floor(h/2),1,1).data);
+    document.getElementById('proRasterAction').value='perspective';
+    document.getElementById('proRasterRadius').value='30';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const after=Array.from(c.getImageData(0,Math.floor(h/2),1,1).data);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),mapped:before.some((v,i)=>i<3&&v!==after[i])};
+  });
+  if(Object.values(perspectiveQA).some(v=>v!==true))throw Error('Perspective UI regression: '+JSON.stringify(perspectiveQA));
+
 
 
 
