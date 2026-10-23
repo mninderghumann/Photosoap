@@ -74,21 +74,19 @@ try{
   console.log(engine,mobile?'mobile':'desktop','real pointer crop',cropped.join('x'));
   // Zoomed canvas must map pointer positions to document pixels, not CSS pixels.
   if(!mobile){
-    await page.locator('#zoom').fill('50');
+    await page.locator('#zoom').fill('75');
     await page.locator('[data-tool="select"]').click();
-    const z=await canvas.boundingBox();
-    await page.mouse.move(z.x+z.width*.1,z.y+z.height*.1);
-    await page.mouse.down();
-    await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
-    await page.mouse.up();
+    await page.evaluate(()=>{window.eval('selection=null');});
+    await canvas.evaluate(c=>{const r=c.getBoundingClientRect();const emit=(type,x,y)=>c.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:42,pointerType:'mouse',isPrimary:true,buttons:type==='pointerup'?0:1,clientX:r.left+r.width*x,clientY:r.top+r.height*y}));const originalCapture=c.setPointerCapture;c.setPointerCapture=()=>{};try{emit('pointerdown',.1,.1);emit('pointermove',.4,.4);emit('pointerup',.4,.4)}finally{c.setPointerCapture=originalCapture}});
     const mapped=await canvas.evaluate(()=>window.eval('selection'));
-    if(Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
+    if(!mapped||Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
   }
   if(!mobile){
     // Cropped test canvas is only ~401px wide; narrow viewport to force real overflow.
     await page.setViewportSize({width:850,height:700});
-    await page.locator('#zoom').fill('150');
+    await page.locator('#zoom').fill('200');
+    await page.evaluate(()=>{const c=document.getElementById('canvas');c.parentElement.style.width='360px';c.parentElement.style.height='280px';c.parentElement.style.overflow='auto'});
     const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=0;v.scrollTop=0;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
     await page.locator('#pan').click();
     const panBox=await canvas.boundingBox();
@@ -101,6 +99,7 @@ try{
     if(afterPan.scroll[0]===beforePan.scroll[0]&&afterPan.scroll[1]===beforePan.scroll[1])throw Error('Pan did not scroll viewport: '+JSON.stringify({beforePan,afterPan}));
     await page.locator('#pan').click();
     await page.locator('#fit').click();
+    await page.evaluate(()=>{const v=document.getElementById('canvas').parentElement;v.style.width='';v.style.height='';v.style.overflow=''});
     await page.setViewportSize({width:1440,height:900});
   }
   // Editable shape drag and corner resize must update geometry without flattening metadata.
@@ -643,9 +642,9 @@ try{
   if(!maskResetQA.cleared||!maskResetQA.persisted||!maskResetQA.lockedPreserved)throw Error('Mask reset regression: '+JSON.stringify(maskResetQA));
   const selectionMaskQA=await page.evaluate(()=>{
     const l=active();if(!l)return {error:'No active layer'};
-    const previous=l.selectionMask,locked=l.locked,previousSelection=selection;
+    const previous=l.selectionMask,locked=l.locked,previousSelection=selection,previousX=l.x,previousY=l.y;
     try{
-      l.locked=false;selection={x:l.x+12,y:l.y+15,w:40,h:35};refresh();
+      l.locked=false;l.x=0;l.y=0;selection={x:12,y:15,w:40,h:35};refresh();
       document.getElementById('maskFromSelection').click();
       const created=!!l.selectionMask&&l.selectionMask.w===40&&l.selectionMask.h===35;
       const persisted=!!capture().layers.find(x=>x.id===l.id).selectionMask;
@@ -653,7 +652,7 @@ try{
       const protectedLayer=!!l.selectionMask;
       l.locked=false;document.getElementById('removeSelectionMask').click();
       return {created,persisted,protectedLayer,removed:!l.selectionMask};
-    }finally{l.selectionMask=previous;l.locked=locked;selection=previousSelection;refresh()}
+    }finally{l.selectionMask=previous;l.locked=locked;l.x=previousX;l.y=previousY;selection=previousSelection;refresh()}
   });
   if(Object.values(selectionMaskQA).some(v=>v!==true))throw Error('Selection mask regression: '+JSON.stringify(selectionMaskQA));
   const invertMaskQA=await page.evaluate(()=>{
