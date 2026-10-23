@@ -11,7 +11,40 @@ function mask(i,points,r=20,feather=0){const o=copy(i);r=Math.max(1,r);for(let y
 function refineEdge(i,r=3){const o=copy(i),a=blur(i,r);for(let k=0;k<i.data.length;k+=4){const edge=Math.abs(i.data[k+3]-a.data[k+3]);o.data[k+3]=clamp(i.data[k+3]+(edge>24?(i.data[k+3]>127?12:-12):0))}return o}
 function heal(i,x,y,r=12){const o=copy(i),b=blur(i,Math.max(2,r));for(let yy=Math.max(0,y-r);yy<Math.min(i.height,y+r);yy++)for(let xx=Math.max(0,x-r);xx<Math.min(i.width,x+r);xx++){let t=clamp((r-Math.hypot(xx-x,yy-y))/Math.max(1,r*.4),0,1);const k=at(i,xx,yy);for(let c=0;c<3;c++)o.data[k+c]=blend(i.data[k+c],b.data[k+c],t)}return o}
 function cloneStamp(i,source,target,r=20){const o=copy(i);for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const d=Math.hypot(dx,dy);if(d>r)continue;const x=Math.round(target.x+dx),y=Math.round(target.y+dy);if(x<0||y<0||x>=i.width||y>=i.height)continue;const k=at(i,x,y),s=at(i,source.x+dx,source.y+dy),t=clamp((r-d)/Math.max(1,r*.25),0,1);for(let c=0;c<4;c++)o.data[k+c]=blend(i.data[k+c],i.data[s+c],t)}return o}
-function removeObject(i,rect){const o=copy(i);const x0=Math.max(0,Math.floor(rect.x)),y0=Math.max(0,Math.floor(rect.y)),x1=Math.min(i.width,Math.ceil(rect.x+rect.width)),y1=Math.min(i.height,Math.ceil(rect.y+rect.height));for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const k=at(i,x,y);for(let c=0;c<4;c++){const left=sample(i,x0-1,y,c),right=sample(i,x1,y,c),top=sample(i,x,y0-1,c),bottom=sample(i,x,y1,c);o.data[k+c]=(blend(left,right,(x-x0)/Math.max(1,x1-x0))+blend(top,bottom,(y-y0)/Math.max(1,y1-y0)))/2}}return o}
+function removeObject(i,rect){
+ const o=copy(i),w=i.width,h=i.height;
+ const x0=Math.max(0,Math.floor(rect.x)),y0=Math.max(0,Math.floor(rect.y));
+ const x1=Math.min(w,Math.ceil(rect.x+rect.width)),y1=Math.min(h,Math.ceil(rect.y+rect.height));
+ if(x1<=x0||y1<=y0)return o;
+ // Diffuse known boundary colors into the selected area, retaining original pixels outside it.
+ const inside=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1;
+ const values=new Float64Array(i.data.length),known=new Uint8Array(w*h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const n=y*w+x,k=n*4;
+   if(!inside(x,y)){known[n]=1;for(let c=0;c<4;c++)values[k+c]=i.data[k+c]}
+ }
+ const maxSteps=(x1-x0)+(y1-y0)+2;
+ for(let step=0;step<maxSteps;step++){
+   let changes=0;
+   const next=values.slice(),nextKnown=known.slice();
+   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+     const n=y*w+x;if(known[n])continue;
+     const neighbors=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+     let count=0,sums=[0,0,0,0];
+     for(const [nx,ny] of neighbors){
+       if(nx<0||ny<0||nx>=w||ny>=h||!known[ny*w+nx])continue;
+       const k=(ny*w+nx)*4;for(let c=0;c<4;c++)sums[c]+=values[k+c];count++;
+     }
+     if(count){for(let c=0;c<4;c++)next[n*4+c]=sums[c]/count;nextKnown[n]=1;changes++}
+   }
+   values.set(next);known.set(nextKnown);
+   if(!changes)break;
+ }
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+   const k=(y*w+x)*4;for(let c=0;c<4;c++)o.data[k+c]=values[k+c];
+ }
+ return o;
+}
 function frequencySeparation(i,r=5){const low=blur(i,r),high=copy(i);for(let k=0;k<i.data.length;k+=4)for(let c=0;c<3;c++)high.data[k+c]=clamp(i.data[k+c]-low.data[k+c]+128);return {low,high}}
 function liquify(i,c,delta,r=60){const o=copy(i);for(let y=Math.max(0,Math.floor(c.y-r));y<Math.min(i.height,c.y+r);y++)for(let x=Math.max(0,Math.floor(c.x-r));x<Math.min(i.width,c.x+r);x++){const d=Math.hypot(x-c.x,y-c.y),t=Math.pow(clamp(1-d/r,0,1),2);const k=at(i,x,y),s=at(i,x-delta.x*t,y-delta.y*t);for(let n=0;n<4;n++)o.data[k+n]=i.data[s+n]}return o}
 function perspective(i,corners){if(!Array.isArray(corners)||corners.length!==4)throw Error('Four corners required');const o=copy(i),w=i.width,h=i.height;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const u=x/Math.max(1,w-1),v=y/Math.max(1,h-1);const sx=blend(blend(corners[0].x,corners[1].x,u),blend(corners[3].x,corners[2].x,u),v),sy=blend(blend(corners[0].y,corners[1].y,u),blend(corners[3].y,corners[2].y,u),v),k=at(i,x,y),s=at(i,sx,sy);for(let c=0;c<4;c++)o.data[k+c]=i.data[s+c]}return o}
