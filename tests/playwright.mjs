@@ -153,6 +153,8 @@ try{
     await page.mouse.move(handle.x+20,handle.y+20,{steps:5});await page.mouse.up();
     const resized=await page.evaluate(()=>{const d=active().shapeData;return {w:d.w,h:d.h}});
     if(state.corner!=='se'||!state.drag||Math.abs(resized.w-rotated.w)<0.1&&Math.abs(resized.h-rotated.h)<0.1)throw Error('Rotated corner pointer regression: '+JSON.stringify({state,rotated,resized}));
+    // Reset to a non-degenerate, in-bounds shape after the unconstrained rotated-resize check.
+    await page.evaluate(()=>{const l=active(),d=l.shapeData;d.w=120;d.h=90;d.x=Math.round((canvas.width-d.w)/2)-l.x;d.y=Math.round((canvas.height-d.h)/2)-l.y;drawShapeLayer(l);refresh()});
     // Shift resizing must preserve the initial aspect ratio.
     const before=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x+l.x,y:d.y+l.y,w:d.w,h:d.h,rotation:d.rotation||0}});
     const c2x=before.x+before.w/2,c2y=before.y+before.h/2,rad=before.rotation*Math.PI/180;
