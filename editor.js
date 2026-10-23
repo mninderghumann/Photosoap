@@ -141,7 +141,7 @@ $('proRasterApply').onclick=()=>{
  if(!l||l.locked){status.textContent='Select an unlocked layer first';return}
  if(!p){status.textContent='Raster module unavailable';return}
  const w=l.canvas.width,h=l.canvas.height,r=Number($('proRasterRadius').value),action=$('proRasterAction').value;
- const rect=selection?{x:Math.max(0,selection.x-l.x),y:Math.max(0,selection.y-l.y),width:selection.width,height:selection.height}:{x:Math.floor(w*.35),y:Math.floor(h*.35),width:Math.max(1,Math.floor(w*.3)),height:Math.max(1,Math.floor(h*.3))};
+ const rect=selection?{x:Math.max(0,selection.x-l.x),y:Math.max(0,selection.y-l.y),width:selection.w,height:selection.h}:{x:Math.floor(w*.35),y:Math.floor(h*.35),width:Math.max(1,Math.floor(w*.3)),height:Math.max(1,Math.floor(h*.3))};
  const center={x:Math.floor(rect.x+rect.width/2),y:Math.floor(rect.y+rect.height/2)};
  if(action==='removeObject'&&!selection){status.textContent='Draw a selection around the object before removal';return}
  if(action==='cloneStamp'){status.textContent='Clone stamp needs an explicitly chosen source point; use the Clone tool instead';return}
