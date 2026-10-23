@@ -114,7 +114,9 @@ try{
     await page.mouse.move(origin.x,origin.y);await page.mouse.down();await page.mouse.move(origin.x+20,origin.y+15,{steps:5});await page.mouse.up();
     const moved=await page.evaluate(()=>{const d=active().shapeData;return {x:d.x,y:d.y,w:d.w,h:d.h}});
     if(moved.x===geometryBefore.x&&moved.y===geometryBefore.y)throw Error('Shape direct dragging did not move');
-    const corner=pixelPoint(moved.x+moved.w,moved.y+moved.h);
+    // Recalculate canvas bounds after dragging: scrolling and layout can shift its screen position.
+    const updatedBox=await canvas.boundingBox();
+    const corner={x:updatedBox.x+(moved.x+moved.w)*updatedBox.width/actualCanvasSize.width,y:updatedBox.y+(moved.y+moved.h)*updatedBox.height/actualCanvasSize.height};
     await page.mouse.move(corner.x,corner.y);await page.mouse.down();await page.mouse.move(corner.x+20,corner.y+15,{steps:5});await page.mouse.up();
     const resizedShape=await page.evaluate(()=>active().shapeData);
     if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed: '+JSON.stringify({before:moved,after:resizedShape,corner}));
