@@ -747,6 +747,24 @@ try{
     return {saved:typeof saved==='string'&&saved.startsWith('data:image/png;base64,'),changed:after===before+30,readjusted:adjusted===before+15,restored:restored===before,reset:reset===undefined};
   });
   if(Object.values(rasterQA).some(v=>v!==true))throw Error('Raster UI regression: '+JSON.stringify(rasterQA));
+  const objectRemovalQA=await page.evaluate(()=>{
+    const l=window.eval('active()');
+    const c=l.canvas.getContext('2d');
+    const original=window.eval('capture()');
+    c.fillStyle='rgb(60,120,180)';
+    c.fillRect(0,0,30,30);
+    c.fillStyle='rgb(250,10,10)';
+    c.fillRect(5,5,6,6);
+    window.eval('selection = {x:5,y:5,w:6,h:6}');
+    document.getElementById('proRasterAction').value='removeObject';
+    document.getElementById('proRasterApply').click();
+    const status=document.getElementById('proRasterStatus').textContent;
+    const center=Array.from(c.getImageData(8,8,1,1).data);
+    const outside=Array.from(c.getImageData(2,2,1,1).data);
+    window.eval('restore')(original);
+    return {applied:status.includes('Applied'),filled:center[0]<200,unselected:outside[0]===60&&outside[1]===120&&outside[2]===180};
+  });
+  if(Object.values(objectRemovalQA).some(v=>v!==true))throw Error('Object removal UI regression: '+JSON.stringify(objectRemovalQA));
   if(errors.length)throw Error(errors.join('; '));
   console.log(engine,mobile?'mobile':'desktop',result);
   await context.close();
