@@ -154,6 +154,7 @@ $('proRasterApply').onclick=()=>{
  case 'removeObject':output=p.removeObject(source,rect);break;
  case 'mask':output=p.mask(source,[center],r,Math.max(1,r/3));break;
  case 'frequencySeparation':output=p.frequencySeparation(source,r).low;break;
+ case 'frequencyHigh':output=p.frequencySeparation(source,r).high;break;
  case 'liquify':output=p.liquify(source,center,{x:r/2,y:0},Math.max(20,r*2));break;
  case 'perspective':output=p.perspective(source,[{x:r,y:0},{x:w-1,y:r},{x:w-1-r,y:h-1},{x:0,y:h-1-r}]);break;
  case 'smartFilter':{const base=restoreProFilterBase(l)||source;output=p.smartFilter(base,[{type:'brightness',amount:r}]);break;}
