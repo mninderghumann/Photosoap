@@ -76,6 +76,7 @@ try{
   if(!mobile){
     await page.locator('#zoom').fill('75');
     await page.locator('[data-tool="select"]').click();
+    await page.evaluate(()=>{window.eval('selection=null');});
     const z=await canvas.boundingBox();
     await page.mouse.move(z.x+z.width*.1,z.y+z.height*.1);
     await page.mouse.down();
