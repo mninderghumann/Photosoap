@@ -755,7 +755,7 @@ try{
     c.fillRect(0,0,30,30);
     c.fillStyle='rgb(250,10,10)';
     c.fillRect(5,5,6,6);
-    window.eval('selection = {x:5,y:5,w:6,h:6}');
+    window.eval('selection = {x:'+ (l.x+5) +',y:'+(l.y+5)+',w:6,h:6}');
     document.getElementById('proRasterAction').value='removeObject';
     document.getElementById('proRasterApply').click();
     const status=document.getElementById('proRasterStatus').textContent;
