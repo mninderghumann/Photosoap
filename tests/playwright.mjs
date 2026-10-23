@@ -82,13 +82,13 @@ try{
     await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
     await page.mouse.up();
     const mapped=await canvas.evaluate(()=>window.eval('selection'));
-    if(Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
+    if(!mapped||Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
   }
   if(!mobile){
     // Cropped test canvas is only ~401px wide; narrow viewport to force real overflow.
     await page.setViewportSize({width:850,height:700});
-    await page.locator('#zoom').fill('250');
+    await page.locator('#zoom').fill('200');
     const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=0;v.scrollTop=0;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
     await page.locator('#pan').click();
     const panBox=await canvas.boundingBox();
