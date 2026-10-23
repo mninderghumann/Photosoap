@@ -112,13 +112,13 @@ try{
   if(!mobile){
     const origin=pixelPoint(geometryBefore.x+geometryBefore.w/2,geometryBefore.y+geometryBefore.h/2);
     await page.mouse.move(origin.x,origin.y);await page.mouse.down();await page.mouse.move(origin.x+20,origin.y+15,{steps:5});await page.mouse.up();
-    const moved=await page.evaluate(()=>{const d=active().shapeData;return {x:d.x,y:d.y,w:d.w,h:d.h}});
+    const moved=await page.evaluate(()=>{const l=active(),d=l.shapeData;return {x:d.x,y:d.y,w:d.w,h:d.h,layerX:l.x,layerY:l.y}});
     if(moved.x===geometryBefore.x&&moved.y===geometryBefore.y)throw Error('Shape direct dragging did not move');
     // Recalculate canvas bounds after dragging: scrolling and layout can shift its screen position.
     await canvas.evaluate(c=>{c.parentElement.scrollLeft=0;c.parentElement.scrollTop=0});
     await canvas.scrollIntoViewIfNeeded();
     const updatedBox=await canvas.boundingBox();
-    const corner={x:updatedBox.x+(moved.x+moved.w)*updatedBox.width/actualCanvasSize.width,y:updatedBox.y+(moved.y+moved.h)*updatedBox.height/actualCanvasSize.height};
+    const corner={x:updatedBox.x+(moved.layerX+moved.x+moved.w)*updatedBox.width/actualCanvasSize.width,y:updatedBox.y+(moved.layerY+moved.y+moved.h)*updatedBox.height/actualCanvasSize.height};
     await page.mouse.move(corner.x,corner.y);await page.mouse.down();await page.mouse.move(corner.x+20,corner.y+15,{steps:5});await page.mouse.up();
     const resizedShape=await page.evaluate(()=>active().shapeData);
     if(resizedShape.w<=moved.w||resizedShape.h<=moved.h)throw Error('Shape corner resize failed: '+JSON.stringify({before:moved,after:resizedShape,corner}));
