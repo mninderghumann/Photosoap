@@ -1,27 +1,27 @@
-# PhotoSoap QA checklist
+# Photosoap release verification checklist
 
-## Phase 1 smoke tests
-1. Open index.html in Chrome, Firefox and Safari.
-2. Import a portrait image. Verify it fits without distortion or clipping.
-3. Create two layers, paint a stroke and erase part of it.
-4. Reorder layers and toggle visibility; confirm correct composite.
-5. Move a layer; use undo and redo to verify its position.
-6. Change brightness, contrast and opacity; confirm exported PNG matches preview.
-7. Save a project, reload it and verify layer names, order, offsets and effects.
-8. Export JPEG; verify transparent pixels render on white.
-9. Resize and crop the canvas; inspect all layers for alignment.
-10. Reload the page and accept autosave recovery.
-11. Reject an oversized image and malformed project JSON.
-12. Test pointer actions on touchscreen and high-DPI display.
-13. Verify keyboard shortcuts do not interfere with text entry.
-14. Check memory consumption with 30 undo steps and large images.
+## Automated browser gate
+- [x] Phase 6 consolidated PR #56 merged into main (merge commit 7bd6163).
+- [x] Pull-request browser smoke workflow passed in Chromium, Firefox, and WebKit (GitHub Actions run 40109440044).
+- [ ] Confirm post-merge main-branch browser workflow passes for the release commit.
+- [ ] Verify production deployment URL and deployed commit match main.
 
-## Known limitations / defects to address
-- No automated tests or browser CI yet.
-- Autosave is limited by localStorage quotas and may silently skip large projects.
-- Imported images are rasterized to canvas dimensions.
-- Rotation, crop, and resize require stronger transform and geometry handling.
-- Painting and selection do not yet support full professional-grade workflows.
-- No deployment verification.
+## Manual desktop and mobile acceptance (not yet verified)
+- [ ] Import PNG, JPEG and WebP; verify orientation and aspect ratio.
+- [ ] Create, reorder, rename, hide, lock and delete layers; undo and redo.
+- [ ] Edit text and shapes; verify transforms survive save/reopen.
+- [ ] Test mouse, touch, keyboard, high-DPI and narrow mobile viewport.
+- [ ] Export PNG/JPEG/WebP and compare preview to downloaded image.
+- [ ] Test autosave recovery after refresh and local-storage quota exhaustion.
+- [ ] Test large images, many layers, 30 undo steps and memory use.
+- [ ] Confirm errors are visible and no uncaught browser exceptions occur.
 
-Do not mark Phase 1 complete until tests have actually been run and failures fixed.
+## Known limitations and scope
+- Session-only captured raster layer sources are **not** persistent Photoshop Smart Objects.
+- Local editing assistants are rule-based; no generative AI service is integrated.
+- Export profiles cover PNG, JPEG and WebP; PSD, SVG and PDF compatibility are not provided by those profiles.
+- Browser CI is necessary but insufficient for production sign-off.
+- Production URL, deployment health, accessibility and performance have not been verified in this checklist.
+
+## Release decision
+Do not claim a production launch or feature parity with Photoshop/Canva/Photopea until deployment verification and manual acceptance are completed.
