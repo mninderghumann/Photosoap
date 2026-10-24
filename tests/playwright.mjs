@@ -843,6 +843,9 @@ try{
     const before=Array.from(c.getImageData(0,Math.floor(h/2),1,1).data);
     document.getElementById('proRasterAction').value='perspective';
     document.getElementById('proRasterRadius').value='30';
+    document.getElementById('proWarpCorner').value='0';
+    document.getElementById('proWarpX').value='30';
+    document.getElementById('proWarpY').value='50';
     document.getElementById('proRasterApply').click();
     const status=document.getElementById('proRasterStatus').textContent;
     const after=Array.from(c.getImageData(0,Math.floor(h/2),1,1).data);
