@@ -165,4 +165,20 @@ for(const [id,dx,dy] of [['selectionMoveLeft',-1,0],['selectionMoveRight',1,0],[
 $('selectionInvertRect').onclick=()=>{if(!selection)return;const r=clampSelection(selection.x,selection.y,selection.w,selection.h);if(r.x===0&&r.y===0&&r.w===canvas.width&&r.h===canvas.height){selection=null;syncSelectionFields();render();return}selection={x:0,y:0,w:canvas.width,h:canvas.height};syncSelectionFields();render();$('selectionInfo').textContent='Whole canvas selected (outside-only selection requires mask support)'};
 const previousSelectionRender=render;render=function(...args){previousSelectionRender(...args);if(document.getElementById('selectionInfo'))syncSelectionFields()};
 syncSelectionFields();
+
+// Phase 5 Batch 2: layer mask precision, reuse, and bulk management.
+const maskPanel=document.createElement('section');maskPanel.id='advancedMaskTools';maskPanel.innerHTML='<h4>Advanced Layer Masks</h4><label>Mask X <input id="maskX" type="number"></label><label>Mask Y <input id="maskY" type="number"></label><label>Mask width <input id="maskW" type="number" min="1"></label><label>Mask height <input id="maskH" type="number" min="1"></label><button id="maskSetBounds" type="button">Set Mask Bounds</button><button id="maskCenter" type="button">Center Mask</button><button id="maskDuplicate" type="button">Duplicate Mask to Next Layer</button><button id="maskAllOn" type="button">Enable All Masks</button><button id="maskAllOff" type="button">Disable All Masks</button><button id="maskRemoveAll" type="button">Remove All Masks</button><button id="maskClearBrush" type="button">Clear Mask Brush Strokes</button><span id="maskStatus" role="status"></span>';document.querySelector('main > aside').appendChild(maskPanel);
+const currentMask=()=>active()?.selectionMask;
+const syncMaskPanel=()=>{const m=currentMask();$('maskStatus').textContent=m?(m.enabled===false?'Disabled':'Enabled')+' mask '+Math.round(m.w)+'×'+Math.round(m.h):'No layer mask';if(m){$('maskX').value=Math.round(m.x);$('maskY').value=Math.round(m.y);$('maskW').value=Math.round(m.w);$('maskH').value=Math.round(m.h)}};
+const setMaskBounds=rect=>{const l=active();if(!l||l.locked||!l.selectionMask)return;const w=l.canvas.width,h=l.canvas.height,x=Math.max(0,Math.min(w-1,Math.round(Number(rect.x)||0))),y=Math.max(0,Math.min(h-1,Math.round(Number(rect.y)||0)));checkpoint();l.selectionMask={...l.selectionMask,x,y,w:Math.max(1,Math.min(w-x,Math.round(Number(rect.w)||1))),h:Math.max(1,Math.min(h-y,Math.round(Number(rect.h)||1)))};refresh();syncMaskPanel()};
+$('maskSetBounds').onclick=()=>setMaskBounds({x:$('maskX').value,y:$('maskY').value,w:$('maskW').value,h:$('maskH').value});
+$('maskCenter').onclick=()=>{const l=active(),m=currentMask();if(!l||!m)return;setMaskBounds({x:(l.canvas.width-m.w)/2,y:(l.canvas.height-m.h)/2,w:m.w,h:m.h})};
+$('maskDuplicate').onclick=()=>{const l=active(),m=currentMask(),target=layers[layers.indexOf(l)+1];if(!m||!target||target.locked)return;checkpoint();target.selectionMask={...m};refresh();syncMaskPanel()};
+const bulkMask=fn=>{const eligible=layers.filter(l=>!l.locked&&l.selectionMask);if(!eligible.length)return;checkpoint();eligible.forEach(fn);refresh();syncMaskPanel()};
+$('maskAllOn').onclick=()=>bulkMask(l=>l.selectionMask={...l.selectionMask,enabled:true});
+$('maskAllOff').onclick=()=>bulkMask(l=>l.selectionMask={...l.selectionMask,enabled:false});
+$('maskRemoveAll').onclick=()=>bulkMask(l=>delete l.selectionMask);
+$('maskClearBrush').onclick=()=>{const l=active();if(!l||l.locked||!l.brushMaskStrokes?.length)return;checkpoint();l.brushMaskStrokes=[];refresh();syncMaskPanel()};
+const maskRefresh=refresh;refresh=function(...args){maskRefresh(...args);if(document.getElementById('maskStatus'))syncMaskPanel()};
+syncMaskPanel();
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
