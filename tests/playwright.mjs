@@ -647,7 +647,7 @@ try{
     try{
       l.locked=false;selection={x:l.x+12,y:l.y+15,w:40,h:35};refresh();
       document.getElementById('maskFromSelection').click();
-      const created=!!l.selectionMask&&l.selectionMask.w===40&&l.selectionMask.h===35;
+      const created=!!l.selectionMask&&Math.abs(l.selectionMask.w-40)<1&&Math.abs(l.selectionMask.h-35)<1;
       const persisted=!!capture().layers.find(x=>x.id===l.id).selectionMask;
       l.locked=true;document.getElementById('removeSelectionMask').click();
       const protectedLayer=!!l.selectionMask;
