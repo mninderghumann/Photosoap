@@ -357,4 +357,22 @@ $('localAssistRun').onclick=()=>{const key=$('localAssistAction').value,l=active
  $('retouchRecipe').value=recipe;$('retouchApply').click();$('localAssistStatus').textContent=$('retouchStatus').textContent;
 };
 
+
+/* Phase 6 Batch 10: ten configurable design template themes built on editable template layers. */
+const templateThemesPanel=document.createElement('section');templateThemesPanel.id='templateThemesPanel';
+templateThemesPanel.innerHTML='<h4>Design Theme Library</h4><label>Theme <select id="templateTheme"><option value="event">Event</option><option value="launch">Product Launch</option><option value="quote">Quote</option><option value="offer">Special Offer</option><option value="birthday">Birthday</option><option value="thankyou">Thank You</option><option value="minimal">Minimal</option><option value="newsletter">Newsletter</option><option value="announcement">Announcement</option><option value="portfolio">Portfolio</option></select></label><button id="templateThemeInsert">Insert Theme</button><span id="templateThemeStatus" role="status"></span>';document.querySelector('main > aside').appendChild(templateThemesPanel);
+const templateThemes={
+ event:['poster','EVENT NIGHT','Join us for an unforgettable evening','#f97316'],
+ launch:['social','NEW ARRIVAL','Discover what is new','#6366f1'],
+ quote:['quote','BE INSPIRED','Make every moment count','#ca8a04'],
+ offer:['sale','LIMITED OFFER','Save on your favorites','#ef4444'],
+ birthday:['social','HAPPY BIRTHDAY','Wishing you a wonderful day','#db2777'],
+ thankyou:['quote','THANK YOU','We appreciate your support','#059669'],
+ minimal:['social','LESS IS MORE','Simple ideas, bold impact','#475569'],
+ newsletter:['poster','THE MONTHLY EDIT','Stories, ideas and updates','#0d9488'],
+ announcement:['social','BIG NEWS','Something exciting is coming','#7c3aed'],
+ portfolio:['poster','CREATIVE PORTFOLIO','Selected work and projects','#2563eb']
+};
+$('templateThemeInsert').onclick=()=>{const theme=templateThemes[$('templateTheme').value];if(!theme)return;const [kind,headline,subtitle,accent]=theme;$('designTemplate').value=kind;$('templateHeadline').value=headline;$('templateSubtitle').value=subtitle;$('templateAccent').value=accent;$('templateInsert').click();$('templateThemeStatus').textContent=$('templateStatus').textContent};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
