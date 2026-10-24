@@ -256,4 +256,18 @@ $('precisionHorizontal').onclick=()=>precisionApply(r=>({...r,h:Math.max(1,Math.
 $('precisionVertical').onclick=()=>precisionApply(r=>({...r,w:Math.max(1,Math.floor(r.w/2))}));
 $('precisionSquare').onclick=()=>precisionApply(r=>({...r,w:Math.min(r.w,r.h),h:Math.min(r.w,r.h)}));
 $('precisionFull').onclick=()=>setAdvancedSelection({x:0,y:0,w:canvas.width,h:canvas.height});
+
+// Phase 6 Batch 2: professional layer workflow operations.
+const layerOps=document.createElement('section');layerOps.id='layerOperationsPanel';layerOps.innerHTML='<h4>Layer Operations</h4><label>Rename <input id="layerOpsName" maxlength="100" placeholder="Layer name"></label><button id="layerOpsRename">Rename</button><button id="layerOpsDuplicate">Duplicate</button><button id="layerOpsHide">Toggle Visibility</button><button id="layerOpsLock">Toggle Lock</button><button id="layerOpsTop">Bring to Front</button><button id="layerOpsBottom">Send to Back</button><button id="layerOpsUp">Move Up</button><button id="layerOpsDown">Move Down</button><button id="layerOpsFullOpacity">Full Opacity</button><button id="layerOpsHalfOpacity">Half Opacity</button><span id="layerOpsStatus" role="status"></span>';document.querySelector('main > aside').appendChild(layerOps);
+const layerOp=(fn,allowLocked=false)=>{const l=active();if(!l||(!allowLocked&&l.locked)){$('layerOpsStatus').textContent='Select an unlocked layer';return}checkpoint();fn(l);refresh();$('layerOpsStatus').textContent='Layer updated'};
+$('layerOpsRename').onclick=()=>{const name=$('layerOpsName').value.trim().slice(0,100);if(name)layerOp(l=>l.name=name)};
+$('layerOpsHide').onclick=()=>layerOp(l=>l.visible=!l.visible,true);
+$('layerOpsLock').onclick=()=>layerOp(l=>l.locked=!l.locked,true);
+$('layerOpsTop').onclick=()=>layerOp(l=>{layers.splice(layers.indexOf(l),1);layers.push(l)});
+$('layerOpsBottom').onclick=()=>layerOp(l=>{layers.splice(layers.indexOf(l),1);layers.unshift(l)});
+$('layerOpsUp').onclick=()=>layerOp(l=>{const i=layers.indexOf(l);if(i<layers.length-1)[layers[i],layers[i+1]]=[layers[i+1],layers[i]]});
+$('layerOpsDown').onclick=()=>layerOp(l=>{const i=layers.indexOf(l);if(i>0)[layers[i],layers[i-1]]=[layers[i-1],layers[i]]});
+$('layerOpsFullOpacity').onclick=()=>layerOp(l=>l.opacity=1);
+$('layerOpsHalfOpacity').onclick=()=>layerOp(l=>l.opacity=.5);
+$('layerOpsDuplicate').onclick=()=>{const l=active();if(!l||layers.length>=MAX_LAYERS||(layers.length+1)*canvas.width*canvas.height>48000000){$('layerOpsStatus').textContent='Layer limit reached or no layer selected';return}checkpoint();const copy={...l,id:++counter,name:l.name+' copy',canvas:document.createElement('canvas'),locked:false};copy.canvas.width=canvas.width;copy.canvas.height=canvas.height;copy.canvas.getContext('2d').drawImage(l.canvas,0,0);if(l.shapeData)copy.shapeData={...l.shapeData};if(l.elementData)copy.elementData={...l.elementData};if(l.textData)copy.textData={...l.textData};if(l.selectionMask)copy.selectionMask={...l.selectionMask};if(l.layerStyles)copy.layerStyles=JSON.parse(JSON.stringify(l.layerStyles));if(l.brushMaskStrokes)copy.brushMaskStrokes=JSON.parse(JSON.stringify(l.brushMaskStrokes));layers.splice(layers.indexOf(l)+1,0,copy);selected=copy.id;refresh();$('layerOpsStatus').textContent='Layer duplicated'};
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
