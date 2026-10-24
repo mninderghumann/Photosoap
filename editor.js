@@ -314,4 +314,16 @@ const typographyPresets={
 };
 $('typographyApply').onclick=()=>{const l=active(),p=typographyPresets[$('typographyPreset').value];if(!l?.textData||l.locked||!p){$('typographyStatus').textContent='Select an unlocked editable text layer';return}checkpoint();l.textData={...l.textData,...p};drawTextLayer(l);refresh();$('typographyStatus').textContent='Text style applied (undo available)'};
 
+
+/* Phase 6 Batch 7: ten vector geometry presets using existing editable shapes. */
+const vectorPresetPanel=document.createElement('section');vectorPresetPanel.id='vectorPresetPanel';
+vectorPresetPanel.innerHTML='<h4>Vector Shape Presets</h4><label>Shape <select id="vectorPreset"><option value="square">Square</option><option value="wide">Wide Rectangle</option><option value="portrait">Portrait Rectangle</option><option value="circle">Circle</option><option value="oval">Oval</option><option value="rule">Horizontal Rule</option><option value="diagonal">Diagonal Line</option><option value="vertical">Vertical Line</option><option value="banner">Banner Bar</option><option value="badge">Badge Circle</option></select></label><button id="vectorPresetApply">Apply Shape</button><span id="vectorPresetStatus" role="status"></span>';document.querySelector('main > aside').appendChild(vectorPresetPanel);
+const vectorPresets={
+ square:['rectangle',180,180],wide:['rectangle',360,150],portrait:['rectangle',150,360],
+ circle:['ellipse',180,180],oval:['ellipse',360,160],
+ rule:['line',400,0],diagonal:['line',300,200],vertical:['line',0,300],
+ banner:['rectangle',460,90],badge:['ellipse',120,120]
+};
+$('vectorPresetApply').onclick=()=>{const l=active(),preset=vectorPresets[$('vectorPreset').value];if(!l?.shapeData||l.locked||!preset){$('vectorPresetStatus').textContent='Select an unlocked editable shape';return}const [kind,w,h]=preset;checkpoint();l.shapeData={...l.shapeData,kind,w,h,x:Math.max(0,Math.round((canvas.width-w)/2)),y:Math.max(0,Math.round((canvas.height-h)/2))};drawShapeLayer(l);refresh();$('vectorPresetStatus').textContent='Shape geometry applied (undo available)'};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
