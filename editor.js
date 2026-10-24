@@ -296,4 +296,22 @@ const retouchDefaults={brightness:100,contrast:100,saturation:100,warmth:0,shado
 const retouchRecipes={portrait:{contrast:95,saturation:105,softFocus:2},clarity:{contrast:108,clarity:20},warm:{warmth:15,saturation:105},cool:{warmth:-15},highlight:{highlights:80},shadow:{shadows:120},vivid:{saturation:115,vibrance:120},matte:{contrast:90,fade:15},mono:{grayscale:100,contrast:110},neutral:{}};
 $('retouchApply').onclick=()=>{const l=active(),key=$('retouchRecipe').value,recipe=retouchRecipes[key];if(!l||l.locked||!recipe){$('retouchStatus').textContent='Select an unlocked layer';return}checkpoint();for(const [name,value] of Object.entries(retouchDefaults))l[name]=Object.hasOwn(recipe,name)?recipe[name]:value;refresh();$('retouchStatus').textContent='Applied '+key+' recipe (undo available)'};
 
+
+/* Phase 6 Batch 6: editable text style presets, using the existing text renderer. */
+const typographyPanel=document.createElement('section');typographyPanel.id='typographyPresetsPanel';
+typographyPanel.innerHTML='<h4>Typography Presets</h4><label>Style <select id="typographyPreset"><option value="headline">Headline</option><option value="subheading">Subheading</option><option value="body">Body</option><option value="caption">Caption</option><option value="serif">Editorial Serif</option><option value="display">Display</option><option value="minimal">Minimal</option><option value="poster">Poster</option><option value="muted">Muted</option><option value="emphasis">Emphasis</option></select></label><button id="typographyApply">Apply to Text</button><span id="typographyStatus" role="status"></span>';document.querySelector('main > aside').appendChild(typographyPanel);
+const typographyPresets={
+ headline:{size:88,font:'Arial',weight:'700',align:'center',color:'#202020'},
+ subheading:{size:48,font:'Arial',weight:'700',align:'left',color:'#333333'},
+ body:{size:24,font:'Arial',weight:'400',align:'left',color:'#202020'},
+ caption:{size:16,font:'Arial',weight:'400',align:'left',color:'#555555'},
+ serif:{size:58,font:'Georgia',weight:'400',align:'center',color:'#252525'},
+ display:{size:108,font:'Arial',weight:'700',align:'center',color:'#111111'},
+ minimal:{size:32,font:'Arial',weight:'400',align:'center',color:'#333333'},
+ poster:{size:120,font:'Arial',weight:'700',align:'center',color:'#e5484d'},
+ muted:{size:28,font:'Georgia',weight:'400',align:'left',color:'#777777'},
+ emphasis:{size:64,font:'Arial',weight:'700',align:'left',color:'#194a8d'}
+};
+$('typographyApply').onclick=()=>{const l=active(),p=typographyPresets[$('typographyPreset').value];if(!l?.textData||l.locked||!p){$('typographyStatus').textContent='Select an unlocked editable text layer';return}checkpoint();l.textData={...l.textData,...p};drawTextLayer(l);refresh();$('typographyStatus').textContent='Text style applied (undo available)'};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
