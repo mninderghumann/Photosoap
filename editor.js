@@ -298,7 +298,7 @@ $('retouchApply').onclick=()=>{const l=active(),key=$('retouchRecipe').value,rec
 
 
 /* Phase 6 Batch 6: editable text style presets, using the existing text renderer. */
-const typographyPanel=document.createElement('section');typographyPanel.id='typographyStylePresetsPanel';
+const typographyPanel=document.createElement('section');typographyPanel.id='typographyPresetsPanel';
 typographyPanel.innerHTML='<h4>Typography Presets</h4><label>Style <select id="typographyStylePreset"><option value="headline">Headline</option><option value="subheading">Subheading</option><option value="body">Body</option><option value="caption">Caption</option><option value="serif">Editorial Serif</option><option value="display">Display</option><option value="minimal">Minimal</option><option value="poster">Poster</option><option value="muted">Muted</option><option value="emphasis">Emphasis</option></select></label><button id="typographyApply">Apply to Text</button><span id="typographyStatus" role="status"></span>';document.querySelector('main > aside').appendChild(typographyPanel);
 const typographyStylePresets={
  headline:{size:88,font:'Arial',weight:'700',align:'center',color:'#202020'},
