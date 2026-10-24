@@ -375,4 +375,17 @@ const templateThemes={
 };
 $('templateThemeInsert').onclick=()=>{const theme=templateThemes[$('templateTheme').value];if(!theme)return;const [kind,headline,subtitle,accent]=theme;$('designTemplate').value=kind;$('templateHeadline').value=headline;$('templateSubtitle').value=subtitle;$('templateAccent').value=accent;$('templateInsert').click();$('templateThemeStatus').textContent=$('templateStatus').textContent};
 
+
+/* Phase 6 Batch 11: export profiles, using the existing PNG/JPEG/WebP encoder. */
+const exportProfilesPanel=document.createElement('section');exportProfilesPanel.id='exportProfilesPanel';
+exportProfilesPanel.innerHTML='<h4>Export Profiles</h4><label>Profile <select id="exportProfile"><option value="png">PNG Original</option><option value="png2">PNG 2×</option><option value="pnghalf">PNG Half</option><option value="jpeg">JPEG High</option><option value="jpegsmall">JPEG Compact</option><option value="jpegwhite">JPEG White Background</option><option value="webp">WebP High</option><option value="webpsmall">WebP Compact</option><option value="webp2">WebP 2×</option><option value="preview">Preview Half</option></select></label><button id="exportProfileApply">Configure Export</button><button id="exportProfilePreview">Preview Profile</button><span id="exportProfileStatus" role="status"></span>';document.querySelector('main > aside').appendChild(exportProfilesPanel);
+const exportProfiles={
+ png:['png','1',100],png2:['png','2',100],pnghalf:['png','0.5',100],
+ jpeg:['jpeg','1',95],jpegsmall:['jpeg','0.5',70],jpegwhite:['jpeg','1',90],
+ webp:['webp','1',95],webpsmall:['webp','0.5',70],webp2:['webp','2',95],
+ preview:['png','0.5',100]
+};
+$('exportProfileApply').onclick=()=>{const p=exportProfiles[$('exportProfile').value];if(!p)return;$('exportFormat').value=p[0];$('exportScale').value=p[1];$('exportQuality').value=p[2];if($('exportProfile').value==='jpegwhite')$('exportBackground').value='#ffffff';$('exportProfileStatus').textContent='Export profile configured'};
+$('exportProfilePreview').onclick=()=>{$('exportProfileApply').click();$('exportPreview').click();$('exportProfileStatus').textContent=$('exportStatus').textContent};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
