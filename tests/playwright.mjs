@@ -82,7 +82,7 @@ try{
     await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
     await page.mouse.up();
     const mapped=await canvas.evaluate(()=>window.eval('selection'));
-    if(Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
+    if(!mapped||Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
   }
   if(!mobile){
