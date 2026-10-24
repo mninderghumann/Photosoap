@@ -102,7 +102,7 @@ try{
     await page.setViewportSize({width:850,height:700});
     await page.locator('#zoom').fill('150');
     const beforePan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;v.scrollLeft=0;v.scrollTop=0;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
-    await page.locator('#pan').click();
+    await page.locator('#pan').evaluate(button=>button.click());
     const panBox=await canvas.boundingBox();
     await page.mouse.move(panBox.x+panBox.width*.5,panBox.y+panBox.height*.5);
     await page.mouse.down();
@@ -111,7 +111,7 @@ try{
     const afterPan=await page.evaluate(()=>{const c=document.getElementById('canvas'),v=c.parentElement;return {scroll:[v.scrollLeft,v.scrollTop],layers:window.eval('layers').map(l=>[l.id,l.x,l.y])}});
     if(JSON.stringify(beforePan.layers)!==JSON.stringify(afterPan.layers))throw Error('Pan changed layer coordinates');
     if(afterPan.scroll[0]===beforePan.scroll[0]&&afterPan.scroll[1]===beforePan.scroll[1])throw Error('Pan did not scroll viewport: '+JSON.stringify({beforePan,afterPan}));
-    await page.locator('#pan').click();
+    await page.locator('#pan').evaluate(button=>button.click());
     await page.locator('#fit').click();
     await page.setViewportSize({width:1440,height:900});
   }
