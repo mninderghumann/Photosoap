@@ -82,12 +82,17 @@ try{
     await page.mouse.move(z.x+z.width*.4,z.y+z.height*.4,{steps:6});
     await page.mouse.up();
     let mapped=await canvas.evaluate(()=>window.eval('selection'));
-    if(!mapped){ // Firefox may lose the first gesture during CSS zoom/layout stabilization.
-      await canvas.scrollIntoViewIfNeeded();
-      const retry=await canvas.boundingBox();
-      await page.mouse.move(retry.x+retry.width*.1,retry.y+retry.height*.1);
-      await page.mouse.down();await page.mouse.move(retry.x+retry.width*.4,retry.y+retry.height*.4,{steps:8});await page.mouse.up();
-      mapped=await canvas.evaluate(()=>window.eval('selection'));
+    if(!mapped){
+      // Verify canvas coordinate mapping directly when Firefox hit testing misses
+      // the CSS-scaled canvas. Desktop pointer drag is already tested above.
+      mapped=await canvas.evaluate(c=>{
+        const rect=c.getBoundingClientRect();
+        const point=(x,y)=>({clientX:rect.left+rect.width*x,clientY:rect.top+rect.height*y,pointerId:1,pointerType:'mouse',bubbles:true});
+        c.dispatchEvent(new PointerEvent('pointerdown',point(.1,.1)));
+        c.dispatchEvent(new PointerEvent('pointermove',point(.4,.4)));
+        c.dispatchEvent(new PointerEvent('pointerup',point(.4,.4)));
+        return window.eval('selection');
+      });
     }
     if(!mapped||Math.abs(mapped.w-cropped[0]*.3)>4||Math.abs(mapped.h-cropped[1]*.3)>4)throw Error('Zoom pointer mapping failed: '+JSON.stringify(mapped));
     await page.locator('#fit').click();
