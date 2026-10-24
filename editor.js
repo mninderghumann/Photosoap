@@ -128,6 +128,14 @@ const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';
 
 /* Phase 5 Batch 1: raster tool integration. Operations are undoable. */
 const proFilterBases=new Map();
+const warpCornerDefaults=[[0,0],[100,0],[100,100],[0,100]];
+function syncWarpCornerControls(){
+ const n=Number($('proWarpCorner').value);
+ $('proWarpX').value=warpCornerDefaults[n][0];
+ $('proWarpY').value=warpCornerDefaults[n][1];
+}
+$('proWarpCorner').addEventListener('change',syncWarpCornerControls);
+syncWarpCornerControls();
 function clearProFilterBases(){proFilterBases.clear()}
 function restoreProFilterBase(l){
  const base=proFilterBases.get(l.id);
