@@ -129,12 +129,19 @@ const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';
 /* Phase 5 Batch 1: raster tool integration. Operations are undoable. */
 const proFilterBases=new Map();
 const warpCornerDefaults=[[0,0],[100,0],[100,100],[0,100]];
+const warpCornerPositions=warpCornerDefaults.map(pair=>pair.slice());
 function syncWarpCornerControls(){
  const n=Number($('proWarpCorner').value);
- $('proWarpX').value=warpCornerDefaults[n][0];
- $('proWarpY').value=warpCornerDefaults[n][1];
+ $('proWarpX').value=warpCornerPositions[n][0];
+ $('proWarpY').value=warpCornerPositions[n][1];
+}
+function saveWarpCornerControls(){
+ const n=Number($('proWarpCorner').value);
+ warpCornerPositions[n]=[Number($('proWarpX').value),Number($('proWarpY').value)];
 }
 $('proWarpCorner').addEventListener('change',syncWarpCornerControls);
+$('proWarpX').addEventListener('input',saveWarpCornerControls);
+$('proWarpY').addEventListener('input',saveWarpCornerControls);
 syncWarpCornerControls();
 function clearProFilterBases(){proFilterBases.clear()}
 function restoreProFilterBase(l){
@@ -164,7 +171,7 @@ $('proRasterApply').onclick=()=>{
  case 'frequencySeparation':output=p.frequencySeparation(source,r).low;break;
  case 'frequencyHigh':output=p.frequencySeparation(source,r).high;break;
  case 'liquify':output=p.liquify(source,center,{x:r/2,y:0},Math.max(20,r*2));break;
- case 'perspective':{const corners=[{x:r,y:0},{x:w-1,y:r},{x:w-1-r,y:h-1},{x:0,y:h-1-r}];const n=Number($('proWarpCorner').value);corners[n]={x:Math.round((w-1)*Number($('proWarpX').value)/100),y:Math.round((h-1)*Number($('proWarpY').value)/100)};output=p.perspective(source,corners);break;}
+ case 'perspective':{const corners=[{x:r,y:0},{x:w-1,y:r},{x:w-1-r,y:h-1},{x:0,y:h-1-r}];for(let n=0;n<4;n++){const pair=warpCornerPositions[n];corners[n]={x:Math.round((w-1)*pair[0]/100),y:Math.round((h-1)*pair[1]/100)}}const n=Number($('proWarpCorner').value);corners[n]={x:Math.round((w-1)*Number($('proWarpX').value)/100),y:Math.round((h-1)*Number($('proWarpY').value)/100)};output=p.perspective(source,corners);break;}
  case 'smartFilter':{const base=restoreProFilterBase(l)||source;output=p.smartFilter(base,[{type:'brightness',amount:r}]);break;}
  default:throw Error('Unknown operation');
  }
