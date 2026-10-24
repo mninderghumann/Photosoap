@@ -343,4 +343,18 @@ $('smartSourceZeroOffset').onclick=()=>{const l=active();if(!l||l.locked)return;
 $('smartSourceFullOpacity').onclick=()=>{$('layerOpsFullOpacity').click();smartMessage('Full opacity applied')};
 $('smartSourceClear').onclick=()=>{const l=active();if(l)smartSources.delete(l.id);smartMessage('Captured source forgotten')};
 
+
+/* Phase 6 Batch 9: local editing assistants; no remote AI service or generative claims. */
+const assistPanel=document.createElement('section');assistPanel.id='localAssistPanel';
+assistPanel.innerHTML='<h4>Local Editing Assistants</h4><p>Rule-based adjustments only. No generative AI or cloud processing.</p><label>Action <select id="localAssistAction"><option value="tone">Auto Tone</option><option value="color">Auto Color</option><option value="analyze">Analyze Brightness</option><option value="reset">Reset Auto Adjustments</option><option value="portrait">Portrait Look</option><option value="clarity">Detail Look</option><option value="mono">Black and White</option><option value="vivid">Vivid Color</option><option value="warm">Warm Look</option><option value="cool">Cool Look</option></select></label><button id="localAssistRun">Run Locally</button><span id="localAssistStatus" role="status"></span>';document.querySelector('main > aside').appendChild(assistPanel);
+$('localAssistRun').onclick=()=>{const key=$('localAssistAction').value,l=active();if(!l){$('localAssistStatus').textContent='Select a layer';return}
+ if(key==='analyze'){$('smartAnalyze').click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ if(l.locked){$('localAssistStatus').textContent='Unlock the layer first';return}
+ if(key==='tone'||key==='color'){$('smartAuto'+(key==='tone'?'Tone':'Color')).click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ if(key==='reset'){$('smartReset').click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ const recipe={portrait:'portrait',clarity:'clarity',mono:'mono',vivid:'vivid',warm:'warm',cool:'cool'}[key];
+ if(!recipe){$('localAssistStatus').textContent='Unsupported action';return}
+ $('retouchRecipe').value=recipe;$('retouchApply').click();$('localAssistStatus').textContent=$('retouchStatus').textContent;
+};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
