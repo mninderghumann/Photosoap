@@ -38,6 +38,15 @@ check(!!d.getElementById('typographyAlign'),'text alignment selector');check(!!d
  check(!!d.getElementById('typographyFamily'),'font family selector');check(!!d.getElementById('typographyBold'),'bold control');check(!!d.getElementById('typographyItalic'),'italic control');d.getElementById('typographyFamily').value='serif';d.getElementById('typographyBold').checked=true;d.getElementById('typographyItalic').checked=true;const styledBefore=d.querySelectorAll('#layers li').length;d.getElementById('typographyAdd').click();check(d.querySelectorAll('#layers li').length===styledBefore+1,'styled typography layer created');
  check(!!d.getElementById('typographyUnderline'),'underline control');check(!!d.getElementById('typographyStrike'),'strikethrough control');d.getElementById('typographyUnderline').checked=true;d.getElementById('typographyStrike').checked=true;const decoratedBefore=d.querySelectorAll('#layers li').length;d.getElementById('typographyAdd').click();check(d.querySelectorAll('#layers li').length===decoratedBefore+1,'decorated text layer created');
  check(!!d.getElementById('typographyShadow'),'text shadow control');check(!!d.getElementById('typographyShadowBlur'),'text shadow blur control');check(!!d.getElementById('typographyShadowColor'),'text shadow color control');d.getElementById('typographyShadow').checked=true;d.getElementById('typographyShadowBlur').value='8';const shadowBefore=d.querySelectorAll('#layers li').length;d.getElementById('typographyAdd').click();check(d.querySelectorAll('#layers li').length===shadowBefore+1,'shadow text layer created');
+ const src=d.createElement('canvas');src.width=20;src.height=20;const sc=src.getContext('2d');sc.fillStyle='#ffffff';sc.fillRect(7,7,6,6);
+ const renderer=w.PhotosoapLayerStyles;check(!!renderer,'layer styles module available');
+ const colored=renderer.apply(src,[{kind:'color',color:'#ff0000',strength:1}]).getContext('2d').getImageData(9,9,1,1).data;
+ check(colored[0]===255&&colored[1]===0&&colored[2]===0,'color overlay changes opaque pixel');
+ const disabled=renderer.apply(src,[{kind:'color',color:'#ff0000',strength:1,enabled:false}]).getContext('2d').getImageData(9,9,1,1).data;
+ check(disabled[1]===255,'disabled style leaves pixels unchanged');
+ const glow=renderer.apply(src,[{kind:'outerGlow',color:'#00ff00',size:3,strength:1}]).getContext('2d').getImageData(4,9,1,1).data;
+ check(glow[3]>0&&glow[1]>0,'outer glow adds visible pixels outside silhouette');
+ check(!!d.getElementById('styleWorkflow'),'style management controls mounted');
  out.textContent='PASS: editor smoke tests';
  }catch(e){out.textContent='FAIL: '+e.message}
  },350);
