@@ -298,9 +298,9 @@ $('retouchApply').onclick=()=>{const l=active(),key=$('retouchRecipe').value,rec
 
 
 /* Phase 6 Batch 6: editable text style presets, using the existing text renderer. */
-const typographyPanel=document.createElement('section');typographyPanel.id='typographyPresetsPanel';
-typographyPanel.innerHTML='<h4>Typography Presets</h4><label>Style <select id="typographyPreset"><option value="headline">Headline</option><option value="subheading">Subheading</option><option value="body">Body</option><option value="caption">Caption</option><option value="serif">Editorial Serif</option><option value="display">Display</option><option value="minimal">Minimal</option><option value="poster">Poster</option><option value="muted">Muted</option><option value="emphasis">Emphasis</option></select></label><button id="typographyApply">Apply to Text</button><span id="typographyStatus" role="status"></span>';document.querySelector('main > aside').appendChild(typographyPanel);
-const typographyPresets={
+const typographyPanel=document.createElement('section');typographyPanel.id='typographyStylePresetsPanel';
+typographyPanel.innerHTML='<h4>Typography Presets</h4><label>Style <select id="typographyStylePreset"><option value="headline">Headline</option><option value="subheading">Subheading</option><option value="body">Body</option><option value="caption">Caption</option><option value="serif">Editorial Serif</option><option value="display">Display</option><option value="minimal">Minimal</option><option value="poster">Poster</option><option value="muted">Muted</option><option value="emphasis">Emphasis</option></select></label><button id="typographyApply">Apply to Text</button><span id="typographyStatus" role="status"></span>';document.querySelector('main > aside').appendChild(typographyPanel);
+const typographyStylePresets={
  headline:{size:88,font:'Arial',weight:'700',align:'center',color:'#202020'},
  subheading:{size:48,font:'Arial',weight:'700',align:'left',color:'#333333'},
  body:{size:24,font:'Arial',weight:'400',align:'left',color:'#202020'},
@@ -312,7 +312,7 @@ const typographyPresets={
  muted:{size:28,font:'Georgia',weight:'400',align:'left',color:'#777777'},
  emphasis:{size:64,font:'Arial',weight:'700',align:'left',color:'#194a8d'}
 };
-$('typographyApply').onclick=()=>{const l=active(),p=typographyPresets[$('typographyPreset').value];if(!l?.textData||l.locked||!p){$('typographyStatus').textContent='Select an unlocked editable text layer';return}checkpoint();l.textData={...l.textData,...p};drawTextLayer(l);refresh();$('typographyStatus').textContent='Text style applied (undo available)'};
+$('typographyApply').onclick=()=>{const l=active(),p=typographyStylePresets[$('typographyStylePreset').value];if(!l?.textData||l.locked||!p){$('typographyStatus').textContent='Select an unlocked editable text layer';return}checkpoint();l.textData={...l.textData,...p};drawTextLayer(l);refresh();$('typographyStatus').textContent='Text style applied (undo available)'};
 
 
 /* Phase 6 Batch 7: ten vector geometry presets using existing editable shapes. */
