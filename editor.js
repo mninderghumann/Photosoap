@@ -326,4 +326,21 @@ const vectorPresets={
 };
 $('vectorPresetApply').onclick=()=>{const l=active(),preset=vectorPresets[$('vectorPreset').value];if(!l?.shapeData||l.locked||!preset){$('vectorPresetStatus').textContent='Select an unlocked editable shape';return}const [kind,w,h]=preset;checkpoint();l.shapeData={...l.shapeData,kind,w,h,x:Math.max(0,Math.round((canvas.width-w)/2)),y:Math.max(0,Math.round((canvas.height-h)/2))};drawShapeLayer(l);refresh();$('vectorPresetStatus').textContent='Shape geometry applied (undo available)'};
 
+
+/* Phase 6 Batch 8: linked-source-like layer snapshots; local raster copies, not PSD smart objects. */
+const smartObjectPanel=document.createElement('section');smartObjectPanel.id='smartObjectPanel';
+smartObjectPanel.innerHTML='<h4>Reusable Layer Source</h4><button id="smartSourceCapture">Capture Source</button><button id="smartSourceRestore">Restore Source</button><button id="smartSourceDuplicate">Duplicate Source Layer</button><button id="smartSourceResetEffects">Reset Effects</button><button id="smartSourceToggleLock">Toggle Lock</button><button id="smartSourceToggleVisibility">Toggle Visibility</button><button id="smartSourceCenter">Center Layer</button><button id="smartSourceZeroOffset">Reset Position</button><button id="smartSourceFullOpacity">Full Opacity</button><button id="smartSourceClear">Forget Source</button><span id="smartSourceStatus" role="status"></span>';document.querySelector('main > aside').appendChild(smartObjectPanel);
+const smartSources=new Map();
+const smartMessage=m=>$('smartSourceStatus').textContent=m;
+$('smartSourceCapture').onclick=()=>{const l=active();if(!l){smartMessage('Select a layer');return}smartSources.set(l.id,l.canvas.toDataURL('image/png'));smartMessage('Source captured for this session')};
+$('smartSourceRestore').onclick=()=>{const l=active(),src=l&&smartSources.get(l.id);if(!l||l.locked||!src){smartMessage('No unlocked layer with a captured source');return}const image=new Image();image.onload=()=>{if(active()?.id!==l.id||l.locked)return;checkpoint();const c=l.canvas.getContext('2d');c.clearRect(0,0,l.canvas.width,l.canvas.height);c.drawImage(image,0,0,l.canvas.width,l.canvas.height);l.textData=undefined;l.shapeData=undefined;l.elementData=undefined;refresh();smartMessage('Raster source restored (undo available)')};image.onerror=()=>smartMessage('Source decoding failed');image.src=src};
+$('smartSourceDuplicate').onclick=()=>{const l=active();if(!l){smartMessage('Select a layer');return}$('layerOpsDuplicate').click();const copy=active();if(copy&&copy.id!==l.id&&smartSources.has(l.id))smartSources.set(copy.id,smartSources.get(l.id));smartMessage('Layer duplicated')};
+$('smartSourceResetEffects').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.brightness=100;l.contrast=100;l.saturation=100;l.opacity=1;l.blur=0;l.grayscale=0;l.sepia=0;refresh();smartMessage('Basic effects reset')};
+$('smartSourceToggleLock').onclick=()=>{$('layerOpsLock').click();smartMessage('Lock toggled')};
+$('smartSourceToggleVisibility').onclick=()=>{$('layerOpsHide').click();smartMessage('Visibility toggled')};
+$('smartSourceCenter').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.x=0;l.y=0;refresh();smartMessage('Layer centered to canvas origin')};
+$('smartSourceZeroOffset').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.offsetX=0;l.offsetY=0;refresh();smartMessage('Layer offset reset')};
+$('smartSourceFullOpacity').onclick=()=>{$('layerOpsFullOpacity').click();smartMessage('Full opacity applied')};
+$('smartSourceClear').onclick=()=>{const l=active();if(l)smartSources.delete(l.id);smartMessage('Captured source forgotten')};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
