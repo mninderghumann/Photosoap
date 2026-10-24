@@ -284,4 +284,108 @@ $('maskPrecShrink').onclick=()=>editMask(m=>{const n=Math.min(10,Math.floor((m.w
 $('maskPrecCenter').onclick=()=>editMask(m=>({...m,x:Math.max(0,Math.round((canvas.width-m.w)/2)),y:Math.max(0,Math.round((canvas.height-m.h)/2))}));
 $('maskPrecCopy').onclick=()=>{const l=active(),i=layers.indexOf(l),above=layers[i+1];if(!l?.selectionMask||!above||above.locked){$('maskPrecStatus').textContent='No eligible layer above';return}checkpoint();above.selectionMask={...l.selectionMask};refresh();$('maskPrecStatus').textContent='Mask copied'};
 $('maskPrecRemove').onclick=()=>{const l=active();if(!l?.selectionMask||l.locked)return;checkpoint();delete l.selectionMask;refresh();$('maskPrecStatus').textContent='Mask removed'};
+
+// Phase 6 Batch 4: ten repeatable brush configuration presets.
+const brushLibrary=document.createElement('section');brushLibrary.id='brushLibraryPanel';brushLibrary.innerHTML='<h4>Brush Library</h4><label>Preset <select id="brushLibrarySelect"><option value="pencil">Pencil</option><option value="marker">Marker</option><option value="airbrush">Airbrush</option><option value="pixel">Pixel Art</option><option value="calligraphy">Calligraphy</option><option value="soft">Soft Round</option><option value="hard">Hard Round</option><option value="sketch">Sketch</option><option value="highlighter">Highlighter</option><option value="eraser">Eraser Setup</option></select></label><button id="brushLibraryApply">Apply Preset</button><span id="brushLibraryStatus" role="status"></span>';document.querySelector('main > aside').appendChild(brushLibrary);
+const brushLibraryPresets={pencil:[3,90,100,10,'round'],marker:[24,80,100,15,'round'],airbrush:[65,20,10,10,'round'],pixel:[8,100,100,100,'square'],calligraphy:[18,90,100,20,'square'],soft:[35,65,15,10,'round'],hard:[35,100,100,20,'round'],sketch:[5,40,70,25,'round'],highlighter:[35,25,100,20,'square'],eraser:[25,100,100,20,'round']};
+$('brushLibraryApply').onclick=()=>{const key=$('brushLibrarySelect').value,p=brushLibraryPresets[key];if(!p)return;$('size').value=p[0];$('brushOpacity').value=p[1];$('brushHardness').value=p[2];$('brushSpacing').value=p[3];$('brushPreset').value=p[4];syncBrushSettings();$('brushLibraryStatus').textContent='Applied '+key+' preset'+(key==='eraser'?' (select Eraser tool to erase)':'')};
+
+/* Phase 6 Batch 5: ten reversible retouch adjustment recipes. */
+const retouchRecipesPanelElement=document.createElement('section');retouchRecipesPanelElement.id='retouchRecipesPanel';retouchRecipesPanelElement.innerHTML='<h4>Retouch Recipes</h4><label>Recipe <select id="retouchRecipe"><option value="portrait">Soft Portrait</option><option value="clarity">Detail Clarity</option><option value="warm">Warm Tone</option><option value="cool">Cool Tone</option><option value="highlight">Highlight Recovery</option><option value="shadow">Shadow Lift</option><option value="vivid">Vivid Color</option><option value="matte">Matte Finish</option><option value="mono">Monochrome</option><option value="neutral">Neutral Reset</option></select></label><button id="retouchApply">Apply</button><span id="retouchStatus" role="status"></span>';document.querySelector('main > aside').appendChild(retouchRecipesPanelElement);
+const retouchDefaults={brightness:100,contrast:100,saturation:100,warmth:0,shadows:100,highlights:100,vibrance:100,fade:0,grayscale:0,softFocus:0,clarity:0};
+const retouchRecipes={portrait:{contrast:95,saturation:105,softFocus:2},clarity:{contrast:108,clarity:20},warm:{warmth:15,saturation:105},cool:{warmth:-15},highlight:{highlights:80},shadow:{shadows:120},vivid:{saturation:115,vibrance:120},matte:{contrast:90,fade:15},mono:{grayscale:100,contrast:110},neutral:{}};
+$('retouchApply').onclick=()=>{const l=active(),key=$('retouchRecipe').value,recipe=retouchRecipes[key];if(!l||l.locked||!recipe){$('retouchStatus').textContent='Select an unlocked layer';return}checkpoint();for(const [name,value] of Object.entries(retouchDefaults))l[name]=Object.hasOwn(recipe,name)?recipe[name]:value;refresh();$('retouchStatus').textContent='Applied '+key+' recipe (undo available)'};
+
+
+/* Phase 6 Batch 6: editable text style presets, using the existing text renderer. */
+const typographyPanel=document.createElement('section');typographyPanel.id='typographyPresetsPanel';
+typographyPanel.innerHTML='<h4>Typography Presets</h4><label>Style <select id="typographyStylePreset"><option value="headline">Headline</option><option value="subheading">Subheading</option><option value="body">Body</option><option value="caption">Caption</option><option value="serif">Editorial Serif</option><option value="display">Display</option><option value="minimal">Minimal</option><option value="poster">Poster</option><option value="muted">Muted</option><option value="emphasis">Emphasis</option></select></label><button id="typographyApply">Apply to Text</button><span id="typographyStatus" role="status"></span>';document.querySelector('main > aside').appendChild(typographyPanel);
+const typographyStylePresets={
+ headline:{size:88,font:'Arial',weight:'700',align:'center',color:'#202020'},
+ subheading:{size:48,font:'Arial',weight:'700',align:'left',color:'#333333'},
+ body:{size:24,font:'Arial',weight:'400',align:'left',color:'#202020'},
+ caption:{size:16,font:'Arial',weight:'400',align:'left',color:'#555555'},
+ serif:{size:58,font:'Georgia',weight:'400',align:'center',color:'#252525'},
+ display:{size:108,font:'Arial',weight:'700',align:'center',color:'#111111'},
+ minimal:{size:32,font:'Arial',weight:'400',align:'center',color:'#333333'},
+ poster:{size:120,font:'Arial',weight:'700',align:'center',color:'#e5484d'},
+ muted:{size:28,font:'Georgia',weight:'400',align:'left',color:'#777777'},
+ emphasis:{size:64,font:'Arial',weight:'700',align:'left',color:'#194a8d'}
+};
+$('typographyApply').onclick=()=>{const l=active(),p=typographyStylePresets[$('typographyStylePreset').value];if(!l?.textData||l.locked||!p){$('typographyStatus').textContent='Select an unlocked editable text layer';return}checkpoint();l.textData={...l.textData,...p};drawTextLayer(l);refresh();$('typographyStatus').textContent='Text style applied (undo available)'};
+
+
+/* Phase 6 Batch 7: ten vector geometry presets using existing editable shapes. */
+const vectorPresetPanel=document.createElement('section');vectorPresetPanel.id='vectorPresetPanel';
+vectorPresetPanel.innerHTML='<h4>Vector Shape Presets</h4><label>Shape <select id="vectorPreset"><option value="square">Square</option><option value="wide">Wide Rectangle</option><option value="portrait">Portrait Rectangle</option><option value="circle">Circle</option><option value="oval">Oval</option><option value="rule">Horizontal Rule</option><option value="diagonal">Diagonal Line</option><option value="vertical">Vertical Line</option><option value="banner">Banner Bar</option><option value="badge">Badge Circle</option></select></label><button id="vectorPresetApply">Apply Shape</button><span id="vectorPresetStatus" role="status"></span>';document.querySelector('main > aside').appendChild(vectorPresetPanel);
+const vectorPresets={
+ square:['rectangle',180,180],wide:['rectangle',360,150],portrait:['rectangle',150,360],
+ circle:['ellipse',180,180],oval:['ellipse',360,160],
+ rule:['line',400,0],diagonal:['line',300,200],vertical:['line',0,300],
+ banner:['rectangle',460,90],badge:['ellipse',120,120]
+};
+$('vectorPresetApply').onclick=()=>{const l=active(),preset=vectorPresets[$('vectorPreset').value];if(!l?.shapeData||l.locked||!preset){$('vectorPresetStatus').textContent='Select an unlocked editable shape';return}const [kind,w,h]=preset;checkpoint();l.shapeData={...l.shapeData,kind,w,h,x:Math.max(0,Math.round((canvas.width-w)/2)),y:Math.max(0,Math.round((canvas.height-h)/2))};drawShapeLayer(l);refresh();$('vectorPresetStatus').textContent='Shape geometry applied (undo available)'};
+
+
+/* Phase 6 Batch 8: linked-source-like layer snapshots; local raster copies, not PSD smart objects. */
+const smartObjectPanel=document.createElement('section');smartObjectPanel.id='smartObjectPanel';
+smartObjectPanel.innerHTML='<h4>Reusable Layer Source</h4><button id="smartSourceCapture">Capture Source</button><button id="smartSourceRestore">Restore Source</button><button id="smartSourceDuplicate">Duplicate Source Layer</button><button id="smartSourceResetEffects">Reset Effects</button><button id="smartSourceToggleLock">Toggle Lock</button><button id="smartSourceToggleVisibility">Toggle Visibility</button><button id="smartSourceCenter">Center Layer</button><button id="smartSourceZeroOffset">Reset Position</button><button id="smartSourceFullOpacity">Full Opacity</button><button id="smartSourceClear">Forget Source</button><span id="smartSourceStatus" role="status"></span>';document.querySelector('main > aside').appendChild(smartObjectPanel);
+const smartSources=new Map();
+const smartMessage=m=>$('smartSourceStatus').textContent=m;
+$('smartSourceCapture').onclick=()=>{const l=active();if(!l){smartMessage('Select a layer');return}smartSources.set(l.id,l.canvas.toDataURL('image/png'));smartMessage('Source captured for this session')};
+$('smartSourceRestore').onclick=()=>{const l=active(),src=l&&smartSources.get(l.id);if(!l||l.locked||!src){smartMessage('No unlocked layer with a captured source');return}const image=new Image();image.onload=()=>{if(active()?.id!==l.id||l.locked)return;checkpoint();const c=l.canvas.getContext('2d');c.clearRect(0,0,l.canvas.width,l.canvas.height);c.drawImage(image,0,0,l.canvas.width,l.canvas.height);l.textData=undefined;l.shapeData=undefined;l.elementData=undefined;refresh();smartMessage('Raster source restored (undo available)')};image.onerror=()=>smartMessage('Source decoding failed');image.src=src};
+$('smartSourceDuplicate').onclick=()=>{const l=active();if(!l){smartMessage('Select a layer');return}$('layerOpsDuplicate').click();const copy=active();if(copy&&copy.id!==l.id&&smartSources.has(l.id))smartSources.set(copy.id,smartSources.get(l.id));smartMessage('Layer duplicated')};
+$('smartSourceResetEffects').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.brightness=100;l.contrast=100;l.saturation=100;l.opacity=1;l.blur=0;l.grayscale=0;l.sepia=0;refresh();smartMessage('Basic effects reset')};
+$('smartSourceToggleLock').onclick=()=>{$('layerOpsLock').click();smartMessage('Lock toggled')};
+$('smartSourceToggleVisibility').onclick=()=>{$('layerOpsHide').click();smartMessage('Visibility toggled')};
+$('smartSourceCenter').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.x=0;l.y=0;refresh();smartMessage('Layer centered to canvas origin')};
+$('smartSourceZeroOffset').onclick=()=>{const l=active();if(!l||l.locked)return;checkpoint();l.offsetX=0;l.offsetY=0;refresh();smartMessage('Layer offset reset')};
+$('smartSourceFullOpacity').onclick=()=>{$('layerOpsFullOpacity').click();smartMessage('Full opacity applied')};
+$('smartSourceClear').onclick=()=>{const l=active();if(l)smartSources.delete(l.id);smartMessage('Captured source forgotten')};
+
+
+/* Phase 6 Batch 9: local editing assistants; no remote AI service or generative claims. */
+const assistPanel=document.createElement('section');assistPanel.id='localAssistPanel';
+assistPanel.innerHTML='<h4>Local Editing Assistants</h4><p>Rule-based adjustments only. No generative AI or cloud processing.</p><label>Action <select id="localAssistAction"><option value="tone">Auto Tone</option><option value="color">Auto Color</option><option value="analyze">Analyze Brightness</option><option value="reset">Reset Auto Adjustments</option><option value="portrait">Portrait Look</option><option value="clarity">Detail Look</option><option value="mono">Black and White</option><option value="vivid">Vivid Color</option><option value="warm">Warm Look</option><option value="cool">Cool Look</option></select></label><button id="localAssistRun">Run Locally</button><span id="localAssistStatus" role="status"></span>';document.querySelector('main > aside').appendChild(assistPanel);
+$('localAssistRun').onclick=()=>{const key=$('localAssistAction').value,l=active();if(!l){$('localAssistStatus').textContent='Select a layer';return}
+ if(key==='analyze'){$('smartAnalyze').click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ if(l.locked){$('localAssistStatus').textContent='Unlock the layer first';return}
+ if(key==='tone'||key==='color'){$('smartAuto'+(key==='tone'?'Tone':'Color')).click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ if(key==='reset'){$('smartReset').click();$('localAssistStatus').textContent=$('smartStatus').textContent;return}
+ const recipe={portrait:'portrait',clarity:'clarity',mono:'mono',vivid:'vivid',warm:'warm',cool:'cool'}[key];
+ if(!recipe){$('localAssistStatus').textContent='Unsupported action';return}
+ $('retouchRecipe').value=recipe;$('retouchApply').click();$('localAssistStatus').textContent=$('retouchStatus').textContent;
+};
+
+
+/* Phase 6 Batch 10: ten configurable design template themes built on editable template layers. */
+const templateThemesPanel=document.createElement('section');templateThemesPanel.id='templateThemesPanel';
+templateThemesPanel.innerHTML='<h4>Design Theme Library</h4><label>Theme <select id="templateTheme"><option value="event">Event</option><option value="launch">Product Launch</option><option value="quote">Quote</option><option value="offer">Special Offer</option><option value="birthday">Birthday</option><option value="thankyou">Thank You</option><option value="minimal">Minimal</option><option value="newsletter">Newsletter</option><option value="announcement">Announcement</option><option value="portfolio">Portfolio</option></select></label><button id="templateThemeInsert">Insert Theme</button><span id="templateThemeStatus" role="status"></span>';document.querySelector('main > aside').appendChild(templateThemesPanel);
+const templateThemes={
+ event:['poster','EVENT NIGHT','Join us for an unforgettable evening','#f97316'],
+ launch:['social','NEW ARRIVAL','Discover what is new','#6366f1'],
+ quote:['quote','BE INSPIRED','Make every moment count','#ca8a04'],
+ offer:['sale','LIMITED OFFER','Save on your favorites','#ef4444'],
+ birthday:['social','HAPPY BIRTHDAY','Wishing you a wonderful day','#db2777'],
+ thankyou:['quote','THANK YOU','We appreciate your support','#059669'],
+ minimal:['social','LESS IS MORE','Simple ideas, bold impact','#475569'],
+ newsletter:['poster','THE MONTHLY EDIT','Stories, ideas and updates','#0d9488'],
+ announcement:['social','BIG NEWS','Something exciting is coming','#7c3aed'],
+ portfolio:['poster','CREATIVE PORTFOLIO','Selected work and projects','#2563eb']
+};
+$('templateThemeInsert').onclick=()=>{const theme=templateThemes[$('templateTheme').value];if(!theme)return;const [kind,headline,subtitle,accent]=theme;$('designTemplate').value=kind;$('templateHeadline').value=headline;$('templateSubtitle').value=subtitle;$('templateAccent').value=accent;$('templateInsert').click();$('templateThemeStatus').textContent=$('templateStatus').textContent};
+
+
+/* Phase 6 Batch 11: export profiles, using the existing PNG/JPEG/WebP encoder. */
+const exportProfilesPanel=document.createElement('section');exportProfilesPanel.id='exportProfilesPanel';
+exportProfilesPanel.innerHTML='<h4>Export Profiles</h4><label>Profile <select id="exportProfile"><option value="png">PNG Original</option><option value="png2">PNG 2×</option><option value="pnghalf">PNG Half</option><option value="jpeg">JPEG High</option><option value="jpegsmall">JPEG Compact</option><option value="jpegwhite">JPEG White Background</option><option value="webp">WebP High</option><option value="webpsmall">WebP Compact</option><option value="webp2">WebP 2×</option><option value="preview">Preview Half</option></select></label><button id="exportProfileApply">Configure Export</button><button id="exportProfilePreview">Preview Profile</button><span id="exportProfileStatus" role="status"></span>';document.querySelector('main > aside').appendChild(exportProfilesPanel);
+const exportProfiles={
+ png:['png','1',100],png2:['png','2',100],pnghalf:['png','0.5',100],
+ jpeg:['jpeg','1',95],jpegsmall:['jpeg','0.5',70],jpegwhite:['jpeg','1',90],
+ webp:['webp','1',95],webpsmall:['webp','0.5',70],webp2:['webp','2',95],
+ preview:['png','0.5',100]
+};
+$('exportProfileApply').onclick=()=>{const p=exportProfiles[$('exportProfile').value];if(!p)return;$('exportFormat').value=p[0];$('exportScale').value=p[1];$('exportQuality').value=p[2];if($('exportProfile').value==='jpegwhite')$('exportBackground').value='#ffffff';$('exportProfileStatus').textContent='Export profile configured'};
+$('exportProfilePreview').onclick=()=>{$('exportProfileApply').click();$('exportPreview').click();$('exportProfileStatus').textContent=$('exportStatus').textContent};
+
 const base=layer('Background');base.canvas.getContext('2d').fillStyle='#ffffff';base.canvas.getContext('2d').fillRect(0,0,canvas.width,canvas.height);layers.push(base);selected=base.id;refresh();clearTimeout(autosaveHandle);pageRecords=[{name:'Page 1',snapshot:capture()}];updatePagePicker();recoverAutosave();
