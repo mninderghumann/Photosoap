@@ -839,7 +839,7 @@ try{
     const l=window.eval('active()'),c=l.canvas.getContext('2d'),original=window.eval('capture()');
     const w=l.canvas.width,h=l.canvas.height;
     c.fillStyle='rgb(30,60,90)';c.fillRect(0,0,w,h);
-    c.fillStyle='rgb(240,200,160)';c.fillRect(0,0,Math.max(2,Math.floor(w/40)),h);
+    c.fillStyle='rgb(240,200,160)';c.fillRect(0,0,2,h);
     const before=Array.from(c.getImageData(0,Math.floor(h/2),1,1).data);
     document.getElementById('proRasterAction').value='perspective';
     document.getElementById('proRasterRadius').value='30';
